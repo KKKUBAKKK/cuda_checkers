@@ -1,0 +1,20 @@
+# Ignore object files
+obj/
+
+# Ignore binary files
+bin/
+
+# Ignore build artifacts
+*.o
+*.out
+*.exe
+
+# Ignore temporary files
+*.tmp
+*.log
+
+# Ignore editor and OS-specific files
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
