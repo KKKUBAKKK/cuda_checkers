@@ -31,10 +31,10 @@
 
 #define FIRST_ROW       0x0000000F
 #define LAST_ROW        0xF0000000
-#define FIRST_COLUMN    0x11111111
-#define SECOND_COLUMN   0x22222222
-#define S_LAST_COLUMN   0x44444444
-#define LAST_COLUMN     0x88888888
+#define FIRST_COLUMN    0x01010101
+#define SECOND_COLUMN   0x20202020
+#define S_LAST_COLUMN   0x04040404
+#define LAST_COLUMN     0x80808080
 
 struct Board {
 public:
@@ -51,7 +51,7 @@ public:
     __host__ __device__ int simulate_n_games(int n);
     __host__ __device__ Board apply_move(const Move &move);
     __host__ void print_board();
-    __host__ void print_square(const Board &board, int row, int col);
+    __host__ void print_square(int row, int col);
 
 };
 

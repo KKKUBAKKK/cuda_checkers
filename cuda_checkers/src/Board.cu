@@ -17,7 +17,7 @@ __host__ void Board::print_board() {
         for (int row = 0; row < 8; ++row) {
             std::cout << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
-                print_square(this, row, col);
+                print_square(row, col);
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
@@ -25,7 +25,7 @@ __host__ void Board::print_board() {
         for (int row = 7; row >= 0; --row) {
             std::cout << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
-                print_square(this, row, col);
+                print_square(row, col);
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
@@ -35,16 +35,16 @@ __host__ void Board::print_board() {
     std::cout << "   A  B  C  D  E  F  G  H\n";
 }
 
-__host__ void Board::print_square(const Board &board, int row, int col) {
+__host__ void Board::print_square(int row, int col) {
     if (row % 2 != col % 2) {
         std::cout << ".  "; // Empty square
         return;
     }
 
     int index = row * 4 + (col / 2);
-    bool is_white_piece = (board.white >> index) & 1;
-    bool is_black_piece = (board.black >> index) & 1;
-    bool is_queen = (board.queens >> index) & 1;
+    bool is_white_piece = (white >> index) & 1;
+    bool is_black_piece = (black >> index) & 1;
+    bool is_queen = (queens >> index) & 1;
 
     if (is_white_piece) {
         if (is_queen) {
@@ -118,6 +118,7 @@ __host__ __device__ Board Board::apply_move(const Move &move) {
     }
     new_board.queens &= new_board.white | new_board.black;
 
+    new_board.whiteToMove = !new_board.whiteToMove;
     return new_board;
 }
 
