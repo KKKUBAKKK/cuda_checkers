@@ -39,6 +39,10 @@ public:
     __host__ __device__ Move peek() {
         return stack[top - 1];
     };
+
+    __host__ __device__ int size() {
+        return top;
+    };
 };
 
 #endif // STACK_H
