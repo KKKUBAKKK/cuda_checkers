@@ -3,7 +3,7 @@
 #define BOARD_H
 
 #include <cstdint>
-#include "../../../../../usr/local/cuda-12.6/targets/x86_64-linux/include/crt/host_defines.h"
+#include "Move.h"
 
 #define INITIAL_WHITE   0x00000FFF
 #define INITIAL_BLACK   0xFFF00000
@@ -16,18 +16,18 @@
 
 #define ODD_UP_RIGHT    5
 #define ODD_UP_LEFT     4
-#define ODD_DOWN_RIGHT  (-3)
-#define ODD_DOWN_LEFT   (-4)
+#define ODD_DOWN_RIGHT  3
+#define ODD_DOWN_LEFT   4
 
 #define EVEN_UP_RIGHT   4
 #define EVEN_UP_LEFT    3
-#define EVEN_DOWN_RIGHT (-4)
-#define EVEN_DOWN_LEFT  (-5)
+#define EVEN_DOWN_RIGHT 4
+#define EVEN_DOWN_LEFT  5
 
 #define UP_RIGHT_CAPT   9
 #define UP_LEFT_CAPT    7
-#define DOWN_RIGHT_CAPT (-7)
-#define DOWN_LEFT_CAPT  (-9)
+#define DOWN_RIGHT_CAPT 7
+#define DOWN_LEFT_CAPT  9
 
 #define FIRST_ROW       0x0000000F
 #define LAST_ROW        0xF0000000
@@ -46,8 +46,13 @@ public:
     __host__ __device__ Board(bool whiteToMove = true) : white(INITIAL_WHITE), black(INITIAL_BLACK), 
                                                         queens(INITIAL_QUEENS), whiteToMove(whiteToMove) {}
 
-    __host__ __device__ void generate_moves();
-    // __host__ __device__ bool is_even_row(int position);
+    __host__ __device__ int generate_moves(Move *moves);
+    __host__ __device__ int simulate_game();
+    __host__ __device__ int simulate_n_games(int n);
+    __host__ __device__ Board apply_move(const Move &move);
+    __host__ void print_board();
+    __host__ void print_square(const Board &board, int row, int col);
+
 };
 
 #endif // BOARD_H

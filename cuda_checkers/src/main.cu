@@ -1,15 +1,15 @@
 #include <iostream>
-#include "kernel.h"
-
-__global__ void myKernel() {
-    // Kernel code goes here
-}
+#include "../include/Board.h" // Include the header file where Board is defined
 
 int main() {
-    // Launch the kernel
-    myKernel<<<1, 1>>>();
-    cudaDeviceSynchronize();
+    Board white;
+    white.print_board();
 
-    std::cout << "CUDA kernel executed successfully!" << std::endl;
-    return 0;
+    Move moves[32];
+    int n = white.generate_moves(moves);
+    for (int i = 0; i < n; i++) {
+        Board b = white.apply_move(moves[i]);
+        std::cout << "Move " << i << "  " << b.white << std::endl;
+        b.print_board();
+    }
 }

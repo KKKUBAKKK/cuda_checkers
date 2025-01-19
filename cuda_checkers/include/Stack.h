@@ -1,5 +1,4 @@
 #include <cstdint>
-#include "../../../../../usr/local/cuda-12.6/targets/x86_64-linux/include/crt/host_defines.h"
 #include "Move.h"
 
 #ifndef STACK_H
@@ -17,7 +16,7 @@ public:
     };
 
     __host__ __device__ ~Stack() {
-        delete[] stack;
+        // delete[] stack;
     };
 
     __host__ __device__ void push(Move value) {

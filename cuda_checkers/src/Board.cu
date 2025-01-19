@@ -8,12 +8,121 @@
 
 #define MAX_MOVES 144
 
-// __host__ __device__ bool Board::is_even_row(int position) {
-//     return (position / 4) % 2 == 0;
-// }
+__host__ void Board::print_board() {
+    // Print column headers
+    std::cout << "   A  B  C  D  E  F  G  H\n";
 
-__host__ __device__ void Board::generate_moves() {
-	Move moves[MAX_MOVES];
+    // Depending on whose move it is, decide the orientation of the board
+    if (!whiteToMove) {
+        for (int row = 0; row < 8; ++row) {
+            std::cout << 1 + row << ' '; // Print row number
+            for (int col = 0; col < 8; ++col) {
+                print_square(this, row, col);
+            }
+            std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+        }
+    } else {
+        for (int row = 7; row >= 0; --row) {
+            std::cout << 1 + row << ' '; // Print row number
+            for (int col = 0; col < 8; ++col) {
+                print_square(this, row, col);
+            }
+            std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+        }
+    }
+
+    // Print column headers
+    std::cout << "   A  B  C  D  E  F  G  H\n";
+}
+
+__host__ void Board::print_square(const Board &board, int row, int col) {
+    if (row % 2 != col % 2) {
+        std::cout << ".  "; // Empty square
+        return;
+    }
+
+    int index = row * 4 + (col / 2);
+    bool is_white_piece = (board.white >> index) & 1;
+    bool is_black_piece = (board.black >> index) & 1;
+    bool is_queen = (board.queens >> index) & 1;
+
+    if (is_white_piece) {
+        if (is_queen) {
+            std::cout << "WQ "; // White Queen
+        } else {
+            std::cout << "W  "; // White piece
+        }
+    } else if (is_black_piece) {
+        if (is_queen) {
+            std::cout << "BQ "; // Black Queen
+        } else {
+            std::cout << "B  "; // Black piece
+        }
+    } else {
+        std::cout << ".  "; // Empty square
+    }
+}
+
+// TODO: Add randomness and time limit
+__host__ __device__ int Board::simulate_n_games(int n) {
+    int score = 0;
+    for (int i = 0; i < n; i++) {
+        score += simulate_game();
+    }
+
+    return score;
+}
+
+// TODO: Add randomness
+__host__ __device__ int Board::simulate_game() {
+    Board board = this;
+    Move moves[MAX_MOVES];
+
+    while (true) {
+        int num_moves = board.generate_moves(moves);
+        if (num_moves == 0) {
+            return 0;
+        }
+
+        // Pick random number between 0 and num_moves
+        int random = 0;
+
+        // Apply the random picked move
+        board = board.apply_move(moves[random]);
+        
+        if (!board.white) {
+            return whiteToMove ? -1 : 1;
+        }
+
+        if (!board.black) {
+            return whiteToMove ? 1 : -1;
+        }
+
+    }
+}
+
+__host__ __device__ Board Board::apply_move(const Move &move) {
+    Board new_board = this;
+    if (new_board.whiteToMove) {
+        new_board.white ^= move.start | move.end;
+        new_board.black ^= move.captured;
+    } else {
+        new_board.black ^= move.start | move.end;
+        new_board.white ^= move.captured;
+    }
+    if (new_board.queens & move.start) {
+        new_board.queens ^= move.start;
+        new_board.queens |= move.end;
+    } else {
+        new_board.queens |= move.end & LAST_ROW;
+    }
+    new_board.queens &= new_board.white | new_board.black;
+
+    return new_board;
+}
+
+__host__ __device__ int Board::generate_moves(Move *moves) {
+	// Move moves[MAX_MOVES];
     int num_moves = 0;
 
     uint32_t player = whiteToMove ? white : black;
@@ -59,66 +168,71 @@ __host__ __device__ void Board::generate_moves() {
                 right[0] = ODD_UP_RIGHT;
                 right[1] = ODD_DOWN_RIGHT;
             }
+
             if (!(m.end & (FIRST_COLUMN | SECOND_COLUMN))) {
-                    if (((m.end << left[0]) & o) && ((m.end << (UP_LEFT_CAPT)) & ~a)) {
-                        Move t = m;
-                        t.end = m.end << (UP_LEFT_CAPT);
-                        t.captured |= (m.end << left[0]);
-                        stack.push(t);
-                    }
-                    if (((m.end << left[1]) & o) && ((m.end << (DOWN_LEFT_CAPT)) & ~a)) {
-                        Move t = m;
-                        t.end = m.end << (DOWN_LEFT_CAPT);
-                        t.captured |= (m.end << left[1]);
-                        stack.push(t);
-                    }
+                if (((m.end << left[0]) & o) && ((m.end << (UP_LEFT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end << (UP_LEFT_CAPT);
+                    t.captured |= (m.end << left[0]);
+                    stack.push(t);
                 }
-                if (!(m.end & (S_LAST_COLUMN | LAST_COLUMN))) {
-                    if (((m.end << right[0]) & o) && ((m.end << (UP_RIGHT_CAPT)) & ~a)) {
-                        Move t = m;
-                        t.end = m.end << (UP_RIGHT_CAPT);
-                        t.captured |= (m.end << right[0]);
-                        stack.push(t);
-                    }
-                    if (((m.end << right[1]) & o) && ((m.end << (DOWN_RIGHT_CAPT)) & ~a)) {
-                        Move t = m;
-                        t.end = m.end << (DOWN_RIGHT_CAPT);
-                        t.captured |= (m.end << right[1]);
-                        stack.push(t);
-                    }
+                if (((m.end >> left[1]) & o) && ((m.end >> (DOWN_LEFT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end >> (DOWN_LEFT_CAPT);
+                    t.captured |= (m.end >> left[1]);
+                    stack.push(t);
                 }
+            }
+            if (!(m.end & (S_LAST_COLUMN | LAST_COLUMN))) {
+                if (((m.end << right[0]) & o) && ((m.end << (UP_RIGHT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end << (UP_RIGHT_CAPT);
+                    t.captured |= (m.end << right[0]);
+                    stack.push(t);
+                }
+                if (((m.end >> right[1]) & o) && ((m.end >> (DOWN_RIGHT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end >> (DOWN_RIGHT_CAPT);
+                    t.captured |= (m.end >> right[1]);
+                    stack.push(t);
+                }
+            }
         } else { // Piece is a queen
             uint32_t position = m.end;
 
             // Initialize steps and constraints for looping through the directions
-            int steps[4, 2];
+            int steps[8];
             if (position & EVEN_ROWS) {
-                steps[0, 0] = EVEN_UP_LEFT;    steps[0, 1] = ODD_UP_LEFT;
-                steps[1, 0] = EVEN_UP_RIGHT;   steps[1, 1] = ODD_UP_RIGHT;
-                steps[2, 0] = EVEN_DOWN_LEFT;  steps[2, 1] = ODD_DOWN_LEFT;
-                steps[3, 0] = EVEN_DOWN_RIGHT; steps[3, 1] = ODD_DOWN_RIGHT;
+                steps[0] = EVEN_UP_LEFT;    steps[1] = ODD_UP_LEFT;
+                steps[2] = EVEN_UP_RIGHT;   steps[3] = ODD_UP_RIGHT;
+                steps[4] = -EVEN_DOWN_LEFT;  steps[5] = -ODD_DOWN_LEFT;
+                steps[6] = -EVEN_DOWN_RIGHT; steps[7] = -ODD_DOWN_RIGHT;
             } else {
-                steps[0, 0] = ODD_UP_LEFT;     steps[0, 1] = EVEN_UP_LEFT;
-                steps[1, 0] = ODD_UP_RIGHT;    steps[1, 1] = EVEN_UP_RIGHT;
-                steps[2, 0] = ODD_DOWN_LEFT;   steps[2, 1] = EVEN_DOWN_LEFT;
-                steps[3, 0] = ODD_DOWN_RIGHT;  steps[3, 1] = EVEN_DOWN_RIGHT;
+                steps[0] = ODD_UP_LEFT;     steps[1] = EVEN_UP_LEFT;
+                steps[2] = ODD_UP_RIGHT;    steps[3] = EVEN_UP_RIGHT;
+                steps[4] = -ODD_DOWN_LEFT;   steps[5] = -EVEN_DOWN_LEFT;
+                steps[6] = -ODD_DOWN_RIGHT;  steps[7] = -EVEN_DOWN_RIGHT;
             }
 
-            int constraints[2,2];
-            constraints[0, 0] = FIRST_COLUMN; constraints[0, 1] = SECOND_COLUMN;
-            constraints[1, 0] = LAST_COLUMN;  constraints[1, 1] = S_LAST_COLUMN;
+            int constraints[4];
+            constraints[0] = FIRST_COLUMN; constraints[1] = SECOND_COLUMN;
+            constraints[2] = LAST_COLUMN;  constraints[3] = S_LAST_COLUMN;
 
             for (int i = 0; i < 4; i++) {
                 int j = 0;
                 bool is_capture = false;
                 Move tm = m;
 
-                while (!(position & constraints[i & 1, 0])) {
-                    if ((position & constraints[i & 1, 1]) && !is_capture)
+                while (!(position & constraints[(i & 1) * 2])) {
+                    if ((position & constraints[(i & 1) * 2 + 1]) && !is_capture)
                         break;
 
-                    int step = steps[i, j++ & 1];
-                    position <<= step;
+                    int step = steps[(i * 2) + (j++ & 1)];
+                    if (step < 0) {
+                        position >>= -step;
+                    } else {
+                        position <<= step;
+                    }
                     if (!position)
                         break;
 
@@ -151,9 +265,7 @@ __host__ __device__ void Board::generate_moves() {
 
     // If no captures were found, find all non-captures
     if (num_moves) {
-        // Somehow return the created captures;
-        // TODO: Implement this
-        return;
+        return num_moves;
     }
 
     // Find all pieces
@@ -195,9 +307,9 @@ __host__ __device__ void Board::generate_moves() {
                     t.end = m.end << (left[0]);
                     moves[num_moves++] = t;
                 }
-                if ((m.end << left[1]) & ~a) {
+                if ((m.end >> left[1]) & ~a) {
                     Move t = m;
-                    t.end = m.end << (left[1]);
+                    t.end = m.end >> (left[1]);
                     moves[num_moves++] = t;
                 }
             }
@@ -207,9 +319,9 @@ __host__ __device__ void Board::generate_moves() {
                     t.end = m.end << (right[0]);
                     moves[num_moves++] = t;
                 }
-                if ((m.end << right[1]) & ~a) {
+                if ((m.end >> right[1]) & ~a) {
                     Move t = m;
-                    t.end = m.end << (right[1]);
+                    t.end = m.end >> (right[1]);
                     moves[num_moves++] = t;
                 }
             }
@@ -217,31 +329,34 @@ __host__ __device__ void Board::generate_moves() {
             uint32_t position = m.end;
 
             // Initialize steps and constraints for looping through the directions
-            int steps[4, 2];
+            int steps[8];
             if (position & EVEN_ROWS) {
-                steps[0, 0] = EVEN_UP_LEFT;    steps[0, 1] = ODD_UP_LEFT;
-                steps[1, 0] = EVEN_UP_RIGHT;   steps[1, 1] = ODD_UP_RIGHT;
-                steps[2, 0] = EVEN_DOWN_LEFT;  steps[2, 1] = ODD_DOWN_LEFT;
-                steps[3, 0] = EVEN_DOWN_RIGHT; steps[3, 1] = ODD_DOWN_RIGHT;
+                steps[0] = EVEN_UP_LEFT;    steps[1] = ODD_UP_LEFT;
+                steps[2] = EVEN_UP_RIGHT;   steps[3] = ODD_UP_RIGHT;
+                steps[4] = -EVEN_DOWN_LEFT;  steps[5] = -ODD_DOWN_LEFT;
+                steps[6] = -EVEN_DOWN_RIGHT; steps[7] = -ODD_DOWN_RIGHT;
             } else {
-                steps[0, 0] = ODD_UP_LEFT;     steps[0, 1] = EVEN_UP_LEFT;
-                steps[1, 0] = ODD_UP_RIGHT;    steps[1, 1] = EVEN_UP_RIGHT;
-                steps[2, 0] = ODD_DOWN_LEFT;   steps[2, 1] = EVEN_DOWN_LEFT;
-                steps[3, 0] = ODD_DOWN_RIGHT;  steps[3, 1] = EVEN_DOWN_RIGHT;
+                steps[0] = ODD_UP_LEFT;     steps[1] = EVEN_UP_LEFT;
+                steps[2] = ODD_UP_RIGHT;    steps[3] = EVEN_UP_RIGHT;
+                steps[4] = -ODD_DOWN_LEFT;   steps[5] = -EVEN_DOWN_LEFT;
+                steps[6] = -ODD_DOWN_RIGHT;  steps[7] = -EVEN_DOWN_RIGHT;
             }
 
             int constraints[2];
             constraints[0] = FIRST_COLUMN;
             constraints[1] = LAST_COLUMN;
 
-            // Add all valid moves to the moves array, but also push them to the stack
             for (int i = 0; i < 4; i++) {
                 int j = 0;
                 Move tm = m;
 
                 while (!(position & constraints[i & 1])) {
-                    int step = steps[i, j++ & 1];
-                    position <<= step;
+                    int step = steps[i * 2 + (j++ & 1)];
+                    if (step < 0)
+                        position >>= -step;
+                    else
+                        position <<= step;
+
                     if (!position)
                         break;
 
@@ -257,7 +372,5 @@ __host__ __device__ void Board::generate_moves() {
     }
 
     // Somehow return the created non-captures;
-    // TODO: Implement this
-    // return moves;
-    return;
+    return num_moves;
 }
