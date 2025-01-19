@@ -13,7 +13,8 @@ __host__ void Board::print_board() {
     std::cout << "   A  B  C  D  E  F  G  H\n";
 
     // Depending on whose move it is, decide the orientation of the board
-    if (!whiteToMove) {
+    // TODO: uncomment later, easier to debug this way
+    // if (!whiteToMove) {
         for (int row = 0; row < 8; ++row) {
             std::cout << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
@@ -21,15 +22,15 @@ __host__ void Board::print_board() {
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
-    } else {
-        for (int row = 7; row >= 0; --row) {
-            std::cout << 1 + row << ' '; // Print row number
-            for (int col = 0; col < 8; ++col) {
-                print_square(row, col);
-            }
-            std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
-        }
-    }
+    // } else {
+    //     for (int row = 7; row >= 0; --row) {
+    //         std::cout << 1 + row << ' '; // Print row number
+    //         for (int col = 0; col < 8; ++col) {
+    //             print_square(row, col);
+    //         }
+    //         std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+    //     }
+    // }
 
     // Print column headers
     std::cout << "   A  B  C  D  E  F  G  H\n";
@@ -75,7 +76,7 @@ __host__ __device__ int Board::simulate_n_games(int n) {
 
 // TODO: Add randomness
 __host__ __device__ int Board::simulate_game() {
-    Board board = this;
+    Board board = *this;
     Move moves[MAX_MOVES];
 
     while (true) {
@@ -102,19 +103,27 @@ __host__ __device__ int Board::simulate_game() {
 }
 
 __host__ __device__ Board Board::apply_move(const Move &move) {
-    Board new_board = this;
+    Board new_board = *this;
     if (new_board.whiteToMove) {
         new_board.white ^= move.start | move.end;
         new_board.black ^= move.captured;
+
+        if (new_board.queens & move.start) {
+            new_board.queens ^= move.start;
+            new_board.queens |= move.end;
+        } else {
+            new_board.queens |= move.end & LAST_ROW;
+        }
     } else {
         new_board.black ^= move.start | move.end;
         new_board.white ^= move.captured;
-    }
-    if (new_board.queens & move.start) {
-        new_board.queens ^= move.start;
-        new_board.queens |= move.end;
-    } else {
-        new_board.queens |= move.end & LAST_ROW;
+
+        if (new_board.queens & move.start) {
+            new_board.queens ^= move.start;
+            new_board.queens |= move.end;
+        } else {
+            new_board.queens |= move.end & FIRST_ROW;
+        }
     }
     new_board.queens &= new_board.white | new_board.black;
 
@@ -303,24 +312,24 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
                 right[1] = ODD_DOWN_RIGHT;
             }
             if (!(m.end & FIRST_COLUMN)) {
-                if ((m.end << left[0]) & ~a) {
+                if (((m.end << left[0]) & ~a) && whiteToMove) {
                     Move t = m;
                     t.end = m.end << (left[0]);
                     moves[num_moves++] = t;
                 }
-                if ((m.end >> left[1]) & ~a) {
+                if (((m.end >> left[1]) & ~a) && !whiteToMove) {
                     Move t = m;
                     t.end = m.end >> (left[1]);
                     moves[num_moves++] = t;
                 }
             }
             if (!(m.end & LAST_COLUMN)) {
-                if ((m.end << right[0]) & ~a) {
+                if (((m.end << right[0]) & ~a) && whiteToMove) {
                     Move t = m;
                     t.end = m.end << (right[0]);
                     moves[num_moves++] = t;
                 }
-                if ((m.end >> right[1]) & ~a) {
+                if (((m.end >> right[1]) & ~a) && !whiteToMove) {
                     Move t = m;
                     t.end = m.end >> (right[1]);
                     moves[num_moves++] = t;
