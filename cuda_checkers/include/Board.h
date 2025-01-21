@@ -32,8 +32,8 @@
 #define FIRST_ROW       0x0000000F
 #define LAST_ROW        0xF0000000
 #define FIRST_COLUMN    0x01010101
-#define SECOND_COLUMN   0x20202020
-#define S_LAST_COLUMN   0x04040404
+#define SECOND_COLUMN   0x10101010
+#define S_LAST_COLUMN   0x08080808
 #define LAST_COLUMN     0x80808080
 
 struct Board {

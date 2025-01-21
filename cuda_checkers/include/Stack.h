@@ -8,11 +8,16 @@
 
 class Stack {
 public:
-    Move stack[STACK_SIZE];
+    Move *stack;
     int top; // Top is first empty position
 
-    __host__ __device__ explicit Stack() {
+    __host__ __device__ explicit Stack(Move *stack = nullptr) {
         top = 0;
+        this->stack = stack;
+        if (this->stack == nullptr) {
+            Move temp[STACK_SIZE];
+            this->stack = temp;
+        }
     };
 
     __host__ __device__ ~Stack() {

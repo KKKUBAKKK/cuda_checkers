@@ -15,21 +15,21 @@ __host__ void Board::print_board() {
     // Depending on whose move it is, decide the orientation of the board
     // TODO: uncomment later, easier to debug this way
     // if (!whiteToMove) {
-        for (int row = 0; row < 8; ++row) {
+        // for (int row = 0; row < 8; ++row) {
+        //     std::cout << 1 + row << ' '; // Print row number
+        //     for (int col = 0; col < 8; ++col) {
+        //         print_square(row, col);
+        //     }
+        //     std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+        // }
+    // } else {
+        for (int row = 7; row >= 0; --row) {
             std::cout << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
                 print_square(row, col);
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
-    // } else {
-    //     for (int row = 7; row >= 0; --row) {
-    //         std::cout << 1 + row << ' '; // Print row number
-    //         for (int col = 0; col < 8; ++col) {
-    //             print_square(row, col);
-    //         }
-    //         std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
-    //     }
     // }
 
     // Print column headers
@@ -109,7 +109,7 @@ __host__ __device__ Board Board::apply_move(const Move &move) {
         new_board.black ^= move.captured;
 
         if (new_board.queens & move.start) {
-            new_board.queens ^= move.start;
+            new_board.queens &= new_board.white | new_board.black;
             new_board.queens |= move.end;
         } else {
             new_board.queens |= move.end & LAST_ROW;
@@ -119,7 +119,7 @@ __host__ __device__ Board Board::apply_move(const Move &move) {
         new_board.white ^= move.captured;
 
         if (new_board.queens & move.start) {
-            new_board.queens ^= move.start;
+            new_board.queens &= new_board.white | new_board.black;
             new_board.queens |= move.end;
         } else {
             new_board.queens |= move.end & FIRST_ROW;
@@ -229,6 +229,7 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
             constraints[2] = LAST_COLUMN;  constraints[3] = S_LAST_COLUMN;
 
             for (int i = 0; i < 4; i++) {
+                position = m.end;
                 int j = 0;
                 bool is_capture = false;
                 Move tm = m;
@@ -359,6 +360,7 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
             for (int i = 0; i < 4; i++) {
                 int j = 0;
                 Move tm = m;
+                position = m.end;
 
                 while (!(position & constraints[i & 1])) {
                     int step = steps[i * 2 + (j++ & 1)];
