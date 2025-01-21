@@ -63,6 +63,10 @@ __host__ void Board::print_square(int row, int col) {
     }
 }
 
+__host__ __device__ bool is_equal(Board board) {
+    return white == board.white && black == board.black && queens == board.queens && whiteToMove == board.whiteToMove;
+}
+
 __device__ int Board::simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n, float time_limit_ms) {
     int score = 0;
     unsigned long long start = clock64();
