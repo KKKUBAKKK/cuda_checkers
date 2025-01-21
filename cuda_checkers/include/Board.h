@@ -4,6 +4,8 @@
 
 #include <cstdint>
 #include "Move.h"
+#include <curand_kernel.h>
+#include <random>
 
 #define INITIAL_WHITE   0x00000FFF
 #define INITIAL_BLACK   0xFFF00000
@@ -36,7 +38,12 @@
 #define S_LAST_COLUMN   0x08080808
 #define LAST_COLUMN     0x80808080
 
-struct Board {
+#define TIME_LIMIT_MS   1000
+#define NUMBER_OF_GAMES 1000
+
+#define MAX_MOVES 48
+
+class Board {
 public:
     uint32_t white;
     uint32_t black;
@@ -46,9 +53,11 @@ public:
     __host__ __device__ Board(bool whiteToMove = true) : white(INITIAL_WHITE), black(INITIAL_BLACK), 
                                                         queens(INITIAL_QUEENS), whiteToMove(whiteToMove) {}
 
-    __host__ __device__ int generate_moves(Move *moves);
-    __host__ __device__ int simulate_game();
-    __host__ __device__ int simulate_n_games(int n);
+    __host__ __device__ int generate_moves(Move *moves, Move *stackmem);
+    __host__ int simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack);
+    __host__ int simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
+    __device__ int simulate_game_gpu(curandState* state, Move *moves, Move *stack);
+    __device__ int simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
     __host__ __device__ Board apply_move(const Move &move);
     __host__ void print_board();
     __host__ void print_square(int row, int col);

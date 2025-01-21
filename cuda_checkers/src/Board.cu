@@ -5,8 +5,7 @@
 #include <thrust/host_vector.h>
 #include "../include/Move.h"
 #include "../include/Stack.h"
-
-#define MAX_MOVES 144
+#include <random>
 
 __host__ void Board::print_board() {
     // Print column headers
@@ -64,41 +63,62 @@ __host__ void Board::print_square(int row, int col) {
     }
 }
 
-// TODO: Add randomness and time limit
-__host__ __device__ int Board::simulate_n_games(int n) {
+__device__ int Board::simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n, float time_limit_ms) {
     int score = 0;
-    for (int i = 0; i < n; i++) {
-        score += simulate_game();
-    }
+    unsigned long long start = clock64();
+    float clock_rate = 1.0f / 1000000.0f;
 
+    for (int i = 0; i < n; i++) {
+        if ((clock64() - start) * clock_rate > time_limit_ms) {
+            break;
+        }
+        score += simulate_game_gpu(state, moves, stack);
+    }
     return score;
 }
 
-// TODO: Add randomness
-__host__ __device__ int Board::simulate_game() {
+__device__ int Board::simulate_game_gpu(curandState* state, Move *moves, Move *stack) {
     Board board = *this;
-    Move moves[MAX_MOVES];
 
     while (true) {
-        int num_moves = board.generate_moves(moves);
-        if (num_moves == 0) {
-            return 0;
-        }
-
-        // Pick random number between 0 and num_moves
-        int random = 0;
-
-        // Apply the random picked move
+        int num_moves = board.generate_moves(moves, stack);
+        if (num_moves == 0) return 0;
+        
+        int random = curand(state) % num_moves;
         board = board.apply_move(moves[random]);
         
-        if (!board.white) {
-            return whiteToMove ? -1 : 1;
-        }
+        if (!board.white) return whiteToMove ? -1 : 1;
+        if (!board.black) return whiteToMove ? 1 : -1;
+    }
+}
 
-        if (!board.black) {
-            return whiteToMove ? 1 : -1;
-        }
+__host__ int Board::simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, int n, float time_limit_ms) {
+    int score = 0;
+    auto start = std::chrono::high_resolution_clock::now();
 
+    for (int i = 0; i < n; i++) {
+        auto now = std::chrono::high_resolution_clock::now();
+        float elapsed = std::chrono::duration<float, std::milli>(now - start).count();
+        if (elapsed > time_limit_ms) {
+            break;
+        }
+        score += simulate_game_cpu(rng, moves, stack);
+    }
+    return score;
+}
+
+__host__ int Board::simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack) {
+    Board board = *this;
+
+    while (true) {
+        int num_moves = board.generate_moves(moves, stack);
+        if (num_moves == 0) return 0;
+        
+        int random = std::uniform_int_distribution<>(0, num_moves-1)(rng);
+        board = board.apply_move(moves[random]);
+        
+        if (!board.white) return whiteToMove ? -1 : 1;
+        if (!board.black) return whiteToMove ? 1 : -1;
     }
 }
 
@@ -131,15 +151,13 @@ __host__ __device__ Board Board::apply_move(const Move &move) {
     return new_board;
 }
 
-__host__ __device__ int Board::generate_moves(Move *moves) {
-	// Move moves[MAX_MOVES];
-    int num_moves = 0;
-
+__host__ __device__ int Board::generate_moves(Move *movesmem, Move *stackmem) {
     uint32_t player = whiteToMove ? white : black;
     uint32_t opponent = whiteToMove ? black : white;
     uint32_t all_pieces = white | black;
 
-    Stack stack;
+    Stack stack(stackmem, MAX_MOVES);
+    Stack moves(movesmem, MAX_MOVES);
 
     // First try to find all captures (forced captures)
     // Find all pieces that can capture
@@ -270,13 +288,13 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
 
         // If the stack size is the same, no additional captures were found
         if (stack.size() == stack_size && m.captured) {
-            moves[num_moves++] = m;
+            moves.push(m);
         }
     }
 
     // If no captures were found, find all non-captures
-    if (num_moves) {
-        return num_moves;
+    if (!moves.is_empty()) {
+        return moves.size();
     }
 
     // Find all pieces
@@ -316,24 +334,24 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
                 if (((m.end << left[0]) & ~a) && whiteToMove) {
                     Move t = m;
                     t.end = m.end << (left[0]);
-                    moves[num_moves++] = t;
+                    moves.push(t);
                 }
                 if (((m.end >> left[1]) & ~a) && !whiteToMove) {
                     Move t = m;
                     t.end = m.end >> (left[1]);
-                    moves[num_moves++] = t;
+                    moves.push(t);
                 }
             }
             if (!(m.end & LAST_COLUMN)) {
                 if (((m.end << right[0]) & ~a) && whiteToMove) {
                     Move t = m;
                     t.end = m.end << (right[0]);
-                    moves[num_moves++] = t;
+                    moves.push(t);
                 }
                 if (((m.end >> right[1]) & ~a) && !whiteToMove) {
                     Move t = m;
                     t.end = m.end >> (right[1]);
-                    moves[num_moves++] = t;
+                    moves.push(t);
                 }
             }
         } else { // Piece is a queen
@@ -377,12 +395,12 @@ __host__ __device__ int Board::generate_moves(Move *moves) {
 
                     Move t = tm;
                     t.end = position;
-                    moves[num_moves++] = t;
+                    moves.push(t);
                 }
             }
         }
     }
 
     // Somehow return the created non-captures;
-    return num_moves;
+    return moves.size();
 }

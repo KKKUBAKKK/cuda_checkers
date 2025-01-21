@@ -3,56 +3,75 @@
 #include <thread>
 #include <chrono>
 
-int main() {
-    Board white;
-    white.print_board();
+#include <cuda_runtime.h>
+#include <curand_kernel.h>
 
-    // Move moves[32];
-    // int n = white.generate_moves(moves);
-    // for (int i = 0; i < n; i++) {
-    //     Board b = white.apply_move(moves[i]);
-    //     std::cout << "White: " << b.white << ", Black: " << b.black << ", Queens: " << b.queens << std::endl;
-    //     std::cout << "Move " << i + 1 << "  " << std::endl;
-    //     b.print_board();
-    // }
-
-    Board board = white;
-    Move moves[144];
-
-    while (true) {
-        int num_moves = board.generate_moves(moves);
-        if (num_moves == 0) {
-            if (board.whiteToMove) {
-                std::cout << "Black wins, no moves!" << std::endl;
-                break;
-            } else {
-                std::cout << "White wins, no moves!" << std::endl;
-                break;
-            }
-        }
-
-        // Pick random number between 0 and num_moves
-        int random = 0;
-
-        // Apply the random picked move
-        board = board.apply_move(moves[random]);
-        if (board.whiteToMove) {
-            std::cout << "Black moved, White to move now: " << std::endl;
-        } else {
-            std::cout << "White moved, Black to move now: " << std::endl;
-        }
-        board.print_board();
-
-        // std::this_thread::sleep_for(std::chrono::seconds(1));
-
-        if (!board.white) {
-            std::cout << "Black wins, all captured!" << std::endl;
-            break;
-        }
-
-        if (!board.black) {
-            std::cout << "White wins, all captured!" << std::endl;
-            break;
-        }
+__global__ void simulate_kernel(Board board, int* result, float time_limit_ms, int num_games) {
+    // One thread only
+    if (threadIdx.x == 0 && blockIdx.x == 0) {
+        // Initialize random state
+        curandState state;
+        curand_init(clock64(), 0, 0, &state);
+        
+        // Allocate moves and stack in thread-local memory
+        Move moves[MAX_MOVES];
+        Move stack[MAX_MOVES];
+        
+        // Run simulation
+        *result = board.simulate_n_games_gpu(&state, moves, stack, num_games, time_limit_ms);
     }
+}
+
+int main() {
+    // Trying out simulate_n_games_gpu
+    // Setup board
+    Board board;
+    board.print_board();
+
+    // Allocate device memory
+    Board* d_board;
+    int *d_result;
+    cudaMalloc(&d_board, sizeof(Board));
+    cudaMalloc(&d_result, sizeof(int));
+    
+    // Launch kernel with 1 thread
+    simulate_kernel<<<1,1>>>(board, d_result, 1000.0f, 1000);
+    
+    // Copy board to device
+    cudaMemcpy(d_board, &board, sizeof(Board), cudaMemcpyHostToDevice);
+
+    // Get result
+    int host_result;
+    cudaMemcpy(&host_result, d_result, sizeof(int), cudaMemcpyDeviceToHost);
+    
+    // Print results
+    std::cout << "GPU Simulation score: " << host_result << std::endl;
+    
+    // Cleanup
+    cudaFree(d_board);
+    cudaFree(d_result);
+    
+    // return 0;
+
+    // Trying out simulate_n_games_cpu
+    // Initialize board and random generator
+    // Board board;
+    board = Board();
+    std::random_device rd;
+    std::mt19937 rng(rd());
+
+    // Allocate move arrays
+    Move moves[144];  // Max possible moves
+    Move stack[144];  // Stack memory for move generation
+
+    // Run simulations
+    int num_games = 1000;
+    float time_limit_ms = 1000.0f;
+    int score = board.simulate_n_games_cpu(rng, moves, stack, num_games, time_limit_ms);
+
+    // Print results
+    std::cout << "CPU Simulation score: " << score << std::endl;
+    std::cout << "Positive score favors white, negative favors black" << std::endl;
+
+    return 0;
 }

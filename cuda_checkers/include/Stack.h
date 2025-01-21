@@ -1,22 +1,26 @@
 #include <cstdint>
 #include "Move.h"
+#include "Board.h"
 
 #ifndef STACK_H
 #define STACK_H
 
-#define STACK_SIZE 64
+// #define STACK_SIZE 64
 
 class Stack {
 public:
     Move *stack;
     int top; // Top is first empty position
+    int n;
 
-    __host__ __device__ explicit Stack(Move *stack = nullptr) {
+    __host__ __device__ explicit Stack(Move *stack = nullptr, int n = MAX_MOVES) {
         top = 0;
         this->stack = stack;
+        this->n = n;
         if (this->stack == nullptr) {
-            Move temp[STACK_SIZE];
+            Move temp[MAX_MOVES];
             this->stack = temp;
+            this->n = MAX_MOVES;
         }
     };
 
@@ -25,10 +29,12 @@ public:
     };
 
     __host__ __device__ void push(Move value) {
+        assert(top < n);
         stack[top++] = value;
     };
 
     __host__ __device__ Move pop() {
+        assert(top > 0);
         return stack[--top];
     };
 
@@ -37,10 +43,11 @@ public:
     };
 
     __host__ __device__ bool is_full() {
-        return top == STACK_SIZE;
+        return top == n;
     };
 
     __host__ __device__ Move peek() {
+        assert(top > 0);
         return stack[top - 1];
     };
 
