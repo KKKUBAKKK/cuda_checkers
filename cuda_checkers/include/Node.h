@@ -20,7 +20,7 @@ public:
     Node(Node *parent, bool whiteToMove = true);
     ~Node();
 
-    Move get_move() const;
+    Move get_move();
     bool is_expanded() const;
     bool is_end() const;
     float get_UCT_value() const;
