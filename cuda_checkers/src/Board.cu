@@ -6,6 +6,7 @@
 #include "../include/Move.h"
 #include "../include/Stack.h"
 #include <random>
+#include <chrono>
 
 __host__ void Board::print_board() {
     // Print column headers
@@ -63,7 +64,7 @@ __host__ void Board::print_square(int row, int col) {
     }
 }
 
-__host__ __device__ bool is_equal(Board board) {
+__host__ __device__ bool Board::is_equal(Board board) {
     return white == board.white && black == board.black && queens == board.queens && whiteToMove == board.whiteToMove;
 }
 
