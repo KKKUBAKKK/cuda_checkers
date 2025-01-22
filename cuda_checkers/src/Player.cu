@@ -121,6 +121,7 @@ Node* Player::select() {
     return current;
 }
 
+// TODO: handle no moves possible
 Node* Player::expand(Node* node) {
     // Expand the node
     // Create a new node and add it to the tree

@@ -27,6 +27,8 @@ void Game::run() {
     Board board;
     bool game_over = false;
     int turn = 0;
+    int white_queen_turns = 0;
+    int black_queen_turns = 0;
 
     std::cout << "Starting game..." << std::endl;
 
@@ -45,6 +47,8 @@ void Game::run() {
         }
 
         // TODO: add draw condition and win if no moves available
+        
+
         // Check for game end conditions
         if (board.white == 0 || board.black == 0) {
             game_over = true;
@@ -54,6 +58,7 @@ void Game::run() {
             } else {
                 std::cout << "White wins!\n";
             }
+            break;
         }
 
         // Switch turn

@@ -32,6 +32,7 @@ Node::~Node() {
     }
 }
 
+// TODO: handle no moves possible
 Move Node::get_move() {
     assert (!possible_moves.empty());
     Move move = possible_moves.front();
@@ -43,6 +44,7 @@ bool Node::is_expanded() const {
     return possible_moves.empty();
 }
 
+// TODO: add draw condition, add no moves possible condition
 bool Node::is_end() const {
     return board.white == 0 || board.black == 0;
 }
