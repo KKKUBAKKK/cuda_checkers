@@ -1,9 +1,6 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#define MAX_ITERATIONS 1000
-#define TIME_LIMIT_MS 1000.0f
-#define MAX_GAMES 1000
 #define THREADS_PER_BLOCK 256
 
 #include "Node.h"
@@ -102,7 +99,7 @@ public:
         // Create a new node and add it to the tree
         // Return the new node
         Move new_move = node->get_move();
-        Board new_board = node->board.apply_move(new_mvoe);
+        Board new_board = node->board.apply_move(new_move);
         Node* new_node = new Node(new_board, node);
         node->children.push_back(new_node);
         return new_node;
@@ -178,7 +175,7 @@ public:
         float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
 
         // Store result
-        atomicAdd(&results, result);
+        atomicAdd(results, result);
 
         // Save updated random state
         states[tid] = localState;

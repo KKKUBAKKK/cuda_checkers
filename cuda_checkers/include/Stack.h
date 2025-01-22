@@ -1,5 +1,4 @@
 #include <cstdint>
-#include "Move.h"
 #include "Board.h"
 
 #ifndef STACK_H

@@ -8,6 +8,8 @@ public:
     Player players[2];
     bool is_first_manual;
     bool is_second_manual;
+    bool is_first_cpu;
+    bool is_second_cpu;
 
     float time_limit_ms;
     int max_games;

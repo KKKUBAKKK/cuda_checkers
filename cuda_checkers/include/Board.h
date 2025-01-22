@@ -38,10 +38,10 @@
 #define S_LAST_COLUMN   0x08080808
 #define LAST_COLUMN     0x80808080
 
-#define TIME_LIMIT_MS   1000
-#define NUMBER_OF_GAMES 1000
-
 #define MAX_MOVES 48
+#define MAX_ITERATIONS 1000
+#define TIME_LIMIT_MS 1000.0f
+#define MAX_GAMES 1000
 
 class Board {
 public:
@@ -55,9 +55,9 @@ public:
 
     __host__ __device__ int generate_moves(Move *moves, Move *stackmem);
     __host__ float simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white);
-    __host__ float simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
+    __host__ float simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white, int n = MAX_GAMES, float time_limit_ms = TIME_LIMIT_MS);
     __device__ float simulate_game_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white);
-    __device__ float simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
+    __device__ float simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white, int n = MAX_GAMES, float time_limit_ms = TIME_LIMIT_MS);
     __host__ __device__ Board apply_move(const Move &move);
     __host__ void print_board();
     __host__ void print_square(int row, int col);
