@@ -8,8 +8,8 @@ public:
     Board board;
     Node *parent;
     std::vector<Node*> children;
-    int score;
-    int visits;
+    float score;
+    float visits;
     std::queue<Move> possible_moves;
 
     explicit Node(Board board = Board(), Node *parent = nullptr) : board(board), parent(parent), children(), score(0), visits(0) {

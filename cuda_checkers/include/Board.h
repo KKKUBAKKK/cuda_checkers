@@ -54,10 +54,10 @@ public:
                                                         queens(INITIAL_QUEENS), whiteToMove(whiteToMove) {}
 
     __host__ __device__ int generate_moves(Move *moves, Move *stackmem);
-    __host__ int simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack);
-    __host__ int simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
-    __device__ int simulate_game_gpu(curandState* state, Move *moves, Move *stack);
-    __device__ int simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
+    __host__ float simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white);
+    __host__ float simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
+    __device__ float simulate_game_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white);
+    __device__ float simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n = NUMBER_OF_GAMES, float time_limit_ms = TIME_LIMIT_MS);
     __host__ __device__ Board apply_move(const Move &move);
     __host__ void print_board();
     __host__ void print_square(int row, int col);

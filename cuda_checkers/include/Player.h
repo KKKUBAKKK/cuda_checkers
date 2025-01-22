@@ -47,7 +47,7 @@ public:
         return -1;
     }
 
-    void moveRoot(Board startBoard) {
+    void move_root(Board startBoard) {
         if (root == nullptr) {
             root = new Node(startBoard, nullptr);
             return;
@@ -77,7 +77,7 @@ public:
         Node* current = root;
         while (current->is_expanded() && !current->is_end()) {
             Node* best_child = nullptr;
-            float best_value = -std::numeric_limits<float>::infinity();
+            float best_value = std::numeric_limits<float>::min();
 
             for (Node* child : current->children) {
                 float uct_value = child->get_UCT_value();
@@ -108,17 +108,18 @@ public:
         return new_node;
     }
 
-    int simulate(Node *node) {
+    float simulate(Node *node) {
         // Simulate the game
         // Run the game until the end
         // Return the result
-        if (is_cpu)
+        if (is_cpu) {
             return simulate_cpu(node->board);
+        }
 
         return simulate_gpu(node->board);
     }
 
-    int simulate_cpu(Board board) {
+    float simulate_cpu(Board board) {
         // Simulate n games on the CPU
         // Run the game until the end
         // Return the result
@@ -126,25 +127,22 @@ public:
         Move *stack = new Move[MAX_MOVES];
         std::random_device rd;
         std::mt19937 rng(rd());
-        int result = root->board.simulate_n_games_cpu(rng, moves, stack, max_games, time_limit_ms);
+        float result = root->board.simulate_n_games_cpu(rng, moves, stack, max_games, time_limit_ms, is_white);
         delete[] moves;
         delete[] stack;
         return result;
     }
 
-    int simulate_gpu(Board board) {
+    float simulate_gpu(Board board) {
         // Simulate n games on the GPU
         // Run the game until the end
         // Return the result
         int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
         // Allocate memory for results on the GPU
-        // int* d_results;
-        // cudaMalloc(&d_results, max_games * sizeof(int));
-        // cudaMemset(d_results, 0, max_games * sizeof(int));
-        int* d_results;
-        cudaMalloc(&d_results, sizeof(int));
-        cudaMemset(d_results, 0, sizeof(int));
+        float* d_results;
+        cudaMalloc(&d_results, sizeof(float));
+        cudaMemset(d_results, 0, sizeof(float));
 
         // Allocate memory for random states on the GPU
         curandState* d_states;
@@ -154,29 +152,20 @@ public:
         init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(d_states, time(NULL));
 
         // Launch the kernel
-        simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, d_states);
+        simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, d_states, is_white);
 
         // Copy results back to the host
-        // int* h_results = new int[max_games];
-        // cudaMemcpy(h_results, d_results, max_games * sizeof(int), cudaMemcpyDeviceToHost);
-        int h_results;
-        cudaMemcpy(&h_results, d_results, sizeof(int), cudaMemcpyDeviceToHost);
-
-        // Sum up the results
-        // int total_result = 0;
-        // for (int i = 0; i < max_games; i++) {
-        //     total_result += h_results[i];
-        // }
+        float h_results;
+        cudaMemcpy(&h_results, d_results, sizeof(float), cudaMemcpyDeviceToHost);
 
         // Free allocated memory
-        // delete[] h_results;
         cudaFree(d_results);
         cudaFree(d_states);
 
-        return total_result;
+        return h_results;
     }
 
-    __global__ void simulate_game_gpu_kernel(Board initial_board, int* results, curandState* states) {
+    __global__ void simulate_game_gpu_kernel(Board initial_board, float* results, curandState* states, bool is_player_white) {
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
         Move moves[MAX_MOVES];
@@ -186,7 +175,7 @@ public:
         curandState localState = states[tid];
 
         // Run simulation
-        int result = initial_board.simulate_game_gpu(&localState, moves, stack);
+        float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
 
         // Store result
         atomicAdd(&results, result);
@@ -195,7 +184,7 @@ public:
         states[tid] = localState;
     }
 
-    void backpropagate(Node *node, int score) {
+    void backpropagate(Node *node, float score) {
         // Backpropagate the results up the tree
         // Update the score and visits of each node
         Node *current = node;
@@ -206,7 +195,7 @@ public:
         }
     }
 
-    int mctsLoop() {
+    int mcts_loop() {
         auto start_time = std::chrono::high_resolution_clock::now();
         auto time_limit = std::chrono::milliseconds(time_limit_ms);
 
@@ -228,7 +217,7 @@ public:
 
             // 3. Simulation
             // Run simulations on the new nodes
-            int score = simulate(new_node);
+            float score = simulate(new_node);
 
             // 4. Backpropagation
             // Backpropagate the results up the tree
@@ -256,18 +245,18 @@ public:
         return best_child;
     }
 
-    Board makeMove(Board startBoard) {
+    Board make_move(Board start_board) {
         // Move root to the current board
-        moveRoot(startBoard);
+        move_root(start_board);
 
         // Run the MCTS algorithm
-        mctsLoop();
+        mcts_loop();
 
         // Find the best child
         Node* best_child = choose_move();
 
         // Set the root to the best child
-        moveRoot(best_child->board);
+        move_root(best_child->board);
 
         // Return the child's board
         return best_child->board;

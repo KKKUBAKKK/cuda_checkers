@@ -68,8 +68,8 @@ __host__ __device__ bool Board::is_equal(Board board) {
     return white == board.white && black == board.black && queens == board.queens && whiteToMove == board.whiteToMove;
 }
 
-__device__ int Board::simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, int n, float time_limit_ms) {
-    int score = 0;
+__device__ float Board::simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white, int n, float time_limit_ms) {
+    float score = 0;
     unsigned long long start = clock64();
     float clock_rate = 1.0f / 1000000.0f;
 
@@ -77,28 +77,52 @@ __device__ int Board::simulate_n_games_gpu(curandState* state, Move *moves, Move
         if ((clock64() - start) * clock_rate > time_limit_ms) {
             break;
         }
-        score += simulate_game_gpu(state, moves, stack);
+        score += simulate_game_gpu(state, moves, stack, is_player_white);
     }
     return score;
 }
 
-__device__ int Board::simulate_game_gpu(curandState* state, Move *moves, Move *stack) {
+__device__ float Board::simulate_game_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white) {
     Board board = *this;
+    int black_queen_moves = 0;
+    int white_queen_moves = 0;
 
     while (true) {
         int num_moves = board.generate_moves(moves, stack);
-        if (num_moves == 0) return 0;
+        if (num_moves == 0) {
+            if (is_player_white) {
+                return board.whiteToMove ? 0 : 1;
+            } else {
+                return board.whiteToMove ? 1 : 0;
+            }
+        }
         
         int random = curand(state) % num_moves;
+
+        if (!moves[random].captured && (moves[random].start & board.queens)) {
+            if (board.whiteToMove) {
+                white_queen_moves++;
+            } else {
+                black_queen_moves++;
+            }
+        } else if (moves[random].captured) {
+            white_queen_moves = 0;
+            black_queen_moves = 0;
+        }
+
+        if (white_queen_moves >= 15 && black_queen_moves >= 15) {
+            return 0.5;
+        }
+
         board = board.apply_move(moves[random]);
         
-        if (!board.white) return whiteToMove ? -1 : 1;
-        if (!board.black) return whiteToMove ? 1 : -1;
+        if (!board.white) return is_player_white ? 0 : 1;
+        if (!board.black) return is_player_white ? 1 : 0;
     }
 }
 
-__host__ int Board::simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, int n, float time_limit_ms) {
-    int score = 0;
+__host__ float Board::simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white, int n, float time_limit_ms) {
+    float score = 0;
     auto start = std::chrono::high_resolution_clock::now();
 
     for (int i = 0; i < n; i++) {
@@ -107,23 +131,47 @@ __host__ int Board::simulate_n_games_cpu(std::mt19937& rng, Move *moves, Move *s
         if (elapsed > time_limit_ms) {
             break;
         }
-        score += simulate_game_cpu(rng, moves, stack);
+        score += simulate_game_cpu(rng, moves, stack, is_player_white);
     }
     return score;
 }
 
-__host__ int Board::simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack) {
+__host__ float Board::simulate_game_cpu(std::mt19937& rng, Move *moves, Move *stack, bool is_player_white) {
     Board board = *this;
+    int black_queen_moves = 0;
+    int white_queen_moves = 0;
 
     while (true) {
         int num_moves = board.generate_moves(moves, stack);
-        if (num_moves == 0) return 0;
+        if (num_moves == 0) {
+            if (is_player_white) {
+                return board.whiteToMove ? 0 : 1;
+            } else {
+                return board.whiteToMove ? 1 : 0;
+            }
+        }
         
         int random = std::uniform_int_distribution<>(0, num_moves-1)(rng);
+
+        if (!moves[random].captured && (moves[random].start & board.queens)) {
+            if (board.whiteToMove) {
+                white_queen_moves++;
+            } else {
+                black_queen_moves++;
+            }
+        } else if (moves[random].captured) {
+            white_queen_moves = 0;
+            black_queen_moves = 0;
+        }
+
+        if (white_queen_moves >= 15 && black_queen_moves >= 15) {
+            return 0.5;
+        }
+
         board = board.apply_move(moves[random]);
         
-        if (!board.white) return whiteToMove ? -1 : 1;
-        if (!board.black) return whiteToMove ? 1 : -1;
+        if (!board.white) return is_player_white ? 0 : 1;
+        if (!board.black) return is_player_white ? 1 : 0;
     }
 }
 
