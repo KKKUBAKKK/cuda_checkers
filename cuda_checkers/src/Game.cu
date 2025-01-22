@@ -35,12 +35,9 @@ void Game::run() {
 
         if ((turn == 0 && is_first_manual) || (turn == 1 && is_second_manual)) {
             // Manual move
-            // std::cout << "Player " << (turn + 1) << " turn:" << std::endl;
-            // int from_row, from_col, to_row, to_col;
-            // std::cout << "Enter move (from_row from_col to_row to_col): ";
-            // std::cin >> from_row >> from_col >> to_row >> to_col;
-            // Move move = {from_row, from_col, to_row, to_col};
-            // board = board.apply_move(move);
+            std::cout << "Player " << (turn + 1) << " turn:" << std::endl;
+            Move move = parse_user_input(board);
+            board = board.apply_move(move);
         } else {
             // NPC move
             std::cout << "Player " << (turn + 1) << " turn:\n";
@@ -81,16 +78,13 @@ Move Game::parse_user_input(Board board) {
         char to_col = input[3];
         char to_row = input[4];
 
-        // Check if move uses black squares only
-        if (((from_row - '1') % 2 != (from_col - 'a') % 2) ||
-            ((to_row - '1') % 2 != (to_col - 'a') % 2)) {
+        // Get bitmasks for start and end positions
+        uint32_t start = coordinates_to_position(from_col, from_row);
+        uint32_t end = coordinates_to_position(to_col, to_row);
+        if (!start || !end) {
             std::cerr << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
-
-        // Get bitmasks for start and end positions
-        uint32_t start = 1 << ((from_row - '1') * 4 + (from_col - 'a') / 2);
-        uint32_t end = 1 << ((to_row - '1') * 4 + (to_col - 'a') / 2);
 
         // Set current player and opponent bitmasks
         uint32_t current_player = board.whiteToMove ? board.white : board.black;
@@ -109,7 +103,12 @@ Move Game::parse_user_input(Board board) {
         }
 
         // Check if move doesn't capture any pieces
-        if (abs(from_row - to_row) != 1 || abs(from_col - to_col) != 1) {
+        if (!(board.queens & start) && abs(from_row - to_row) != 1 || abs(from_col - to_col) != 1) {
+            std::cerr << "Invalid move. Please try again." << std::endl;
+            return parse_user_input(board); // Recursively ask for input again
+        }
+
+        if (board.queens & start && !are_positions_on_diagonal_empty(from_col, from_row, to_col, to_row, current_player, opponent)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
@@ -124,19 +123,13 @@ Move Game::parse_user_input(Board board) {
         char to_col = input[3];
         char to_row = input[4];
 
-        // Check if move uses black squares only
-        if (((from_row - '1') % 2 != (from_col - 'a') % 2) ||
-            ((to_row - '1') % 2 != (to_col - 'a') % 2)) {
+        // Get bitmasks for start and end positions
+        uint32_t start = coordinates_to_position(from_col, from_row);
+        uint32_t end = coordinates_to_position(to_col, to_row);
+        if (!start || !end) {
             std::cerr << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
-
-        // Get bitmasks for start and end positions
-        uint32_t start = 1 << ((from_row - '1') * 4 + (from_col - 'a') / 2);
-        uint32_t end = 1 << ((to_row - '1') * 4 + (to_col - 'a') / 2);
-
-        // Calculate captured piece bitmask
-        uint32_t captured = 1 << (((from_row - '1' + to_row - '1') / 2) * 4 + ((from_col - 'a' + to_col - 'a') / 2) / 2);
 
         // Set current player and opponent bitmasks
         uint32_t current_player = board.whiteToMove ? board.white : board.black;
@@ -148,28 +141,21 @@ Move Game::parse_user_input(Board board) {
             return parse_user_input(board); // Recursively ask for input again
         }
 
-        // Check if end position is empty
-        if (end & (current_player | opponent)) {
+        Board temp = board;
+        if (temp.whiteToMove) {
+            temp.white ^= start;
+        } else {
+            temp.black ^= start;
+        }
+        Move move = validate_single_capture(from_col, from_row, to_col, to_row, temp);
+        if (!move.start) {
             std::cerr << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
-        // Check if captured piece is opponent's piece
-        if (!(captured & opponent)) {
-            std::cerr << "Invalid move. Please try again." << std::endl;
-            return parse_user_input(board); // Recursively ask for input again
-        }
-
-        // Check if move captures exactly one piece
-        if (abs(from_row - to_row) != 2 || abs(from_col - to_col) != 2) {
-            std::cerr << "Invalid move. Please try again." << std::endl;
-            return parse_user_input(board); // Recursively ask for input again
-        }
-
-        return Move{start, end, captured};
+        return move;
     }
     
-    // TODO: Implement multi-capture move (check if it's valid)
     if (std::regex_match(input, multi_capture_regex)) {
         // Multiple captures
         std::vector<std::string> positions;
@@ -180,19 +166,198 @@ Move Game::parse_user_input(Board board) {
             positions.push_back(position);
         }
 
-        uint32_t start = 1 << ((positions[0][1] - '1') * 4 + (positions[0][0] - 'a') / 2);
-        uint32_t end = 1 << ((positions.back()[1] - '1') * 4 + (positions.back()[0] - 'a') / 2);
+        char from_col = positions[0][0];
+        char from_row = positions[0][1];
+        char to_col = positions.back()[0];
+        char to_row = positions.back()[1];
+
+        uint32_t res_start = coordinates_to_position(from_col, from_row);
+        uint32_t res_end = coordinates_to_position(to_col, to_row);
+        if (!res_start || !res_end) {
+            std::cerr << "Invalid move. Please try again." << std::endl;
+            return parse_user_input(board); // Recursively ask for input again
+        }
+
+        // Set current player and opponent bitmasks
+        uint32_t current_player = board.whiteToMove ? board.white : board.black;
+        uint32_t opponent = board.whiteToMove ? board.black : board.white;
+
+        // Check if start position is occupied by current player
+        if (!(res_start & current_player)) {
+            std::cerr << "Invalid move. Please try again." << std::endl;
+            return parse_user_input(board); // Recursively ask for input again
+        }
 
         // Calculate captured pieces positions
         uint32_t captured = 0;
+        Board temp = board;
+        if (temp.whiteToMove) {
+            temp.white ^= res_start;
+        } else {
+            temp.black ^= res_start;
+        }
         for (size_t i = 1; i < positions.size(); ++i) {
-            uint32_t intermediate = ((positions[i - 1][1] - '1' + positions[i][1] - '1') / 2) * 4 + ((positions[i - 1][0] - 'a' + positions[i][0] - 'a') / 2) / 2;
-            captured |= (1 << intermediate);
+            from_col = positions[i - 1][0];
+            from_row = positions[i - 1][1];
+            to_col = positions[i][0];
+            to_row = positions[i][1];
+
+            Move move = validate_single_capture(from_col, from_row, to_col, to_row, temp);
+            if (!move.start) {
+                std::cerr << "Invalid move. Please try again." << std::endl;
+                return parse_user_input(board); // Recursively ask for input again
+            }
+
+            captured |= move.captured;
+
+            uint32_t start = coordinates_to_position(from_col, from_row);
+            uint32_t end = coordinates_to_position(to_col, to_row);
+            if (start & temp.queens) {
+                temp.queens ^= start;
+                temp.queens |= end;
+            }
         }
 
-        return Move{start, end, captured};
+        return Move{res_start, res_end, captured};
     }
 
     std::cerr << "Invalid move format. Please try again." << std::endl;
     return parse_user_input(board); // Recursively ask for input again
+}
+
+Move Game::validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board board) {
+    // Get bitmasks for start and end positions
+    uint32_t start = coordinates_to_position(from_col, from_row);
+    uint32_t end = coordinates_to_position(to_col, to_row);
+    if (!start || !end) {
+        return Move{0, 0, 0};
+    }
+
+    // Check if piece is a queen, if not check if move is valid
+    if (!(board.queens & start) && (abs(from_col - to_col) != 1 || abs(from_row - to_row) != 1)) {
+        return Move{0, 0, 0};
+    }
+
+    // Set current player and opponent bitmasks
+    uint32_t current_player = board.whiteToMove ? board.white : board.black;
+    uint32_t opponent = board.whiteToMove ? board.black : board.white;
+
+    // Check if end position is empty
+    if (end & (current_player | opponent)) {
+        return Move{0, 0, 0};
+    }
+
+    // Find the captured piece
+    uint32_t temp = start;
+    uint32_t captured = 0;
+    while(temp ^ end) {
+        if (start < end) {
+            temp <<= 1;
+        } else {
+            temp >>= 1;
+        }
+
+        if (temp & (current_player ^ start)) {
+            return Move{0, 0, 0};
+        }
+
+        if (temp & opponent) {
+            // More than one captured piece
+            if (captured)   {
+                return Move{0, 0, 0};
+            }
+
+            captured = temp;
+        }
+    }
+
+    // No captured pieces
+    if (!captured) {
+        return Move{0, 0, 0};
+    }
+
+    // Check if start, end and captured are on the same diagonal
+    std::pair<char, char> capture_coords = position_to_coordinates(captured);
+    if (!are_on_same_diagonal(from_col, from_row, to_col, to_row) ||
+        !are_on_same_diagonal(from_col, from_row, capture_coords.first, capture_coords.second) ||
+        !are_on_same_diagonal(to_col, to_row, capture_coords.first, capture_coords.second)) {
+        return Move{0, 0, 0};
+    }
+
+    return Move{start, end, captured};
+}
+
+// Function to check if two fields are on the same diagonal
+bool Game::are_on_same_diagonal(char from_col, char from_row, char to_col, char to_row) {
+    // Convert columns 'a'-'h' to 0-7
+    int from_col_idx = from_col - 'a';
+    int to_col_idx = to_col - 'a';
+
+    // Convert rows '1'-'8' to 0-7
+    int from_row_idx = from_row - '1';
+    int to_row_idx = to_row - '1';
+
+    // Check if the absolute difference between columns is equal to the absolute difference between rows
+    return std::abs(from_col_idx - to_col_idx) == std::abs(from_row_idx - to_row_idx);
+}
+
+// Function to convert a uint32_t position to char coordinates
+std::pair<char, char> Game::position_to_coordinates(uint32_t position) {
+    // Find the bit position (0-based index)
+    int bit_position = 0;
+    while (position >>= 1) {
+        bit_position++;
+    }
+
+    // Calculate row and column indices
+    int row_idx = bit_position / 4;
+    int col_idx = (bit_position % 4) * 2 + (row_idx % 2);
+
+    // Convert indices to characters
+    char row = '1' + row_idx;
+    char col = 'a' + col_idx;
+
+    return {col, row};
+}
+
+uint32_t Game::coordinates_to_position(char col, char row) {
+    if (((row - '1') % 2 != (col - 'a') % 2)) {
+        return 0;
+    }
+
+    // Convert columns 'a'-'h' to 0-7
+    int col_idx = col - 'a';
+
+    // Convert rows '1'-'8' to 0-7
+    int row_idx = row - '1';
+
+    // Calculate the bit position (0-based index)
+    int bit_position = row_idx * 4 + col_idx / 2;
+
+    return 1 << bit_position;
+}
+
+// Function to check if all positions on the diagonal between two places are empty
+bool Game::are_positions_on_diagonal_empty(char from_col, char from_row, char to_col, char to_row, uint32_t current_player, uint32_t opponent) {
+    int from_col_idx = from_col - 'a';
+    int from_row_idx = from_row - '1';
+    int to_col_idx = to_col - 'a';
+    int to_row_idx = to_row - '1';
+
+    int col_step = (to_col_idx > from_col_idx) ? 1 : -1;
+    int row_step = (to_row_idx > from_row_idx) ? 1 : -1;
+
+    int col = from_col_idx + col_step;
+    int row = from_row_idx + row_step;
+
+    while (col != to_col_idx && row != to_row_idx) {
+        uint32_t position = coordinates_to_position('a' + col, '1' + row);
+        if (position & (current_player | opponent)) {
+            return false;
+        }
+        col += col_step;
+        row += row_step;
+    }
+
+    return true;
 }
