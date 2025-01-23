@@ -6,6 +6,8 @@
 #include "Board.h"
 #include "Move.h"
 
+using namespace std;
+
 static Game Game::getGameInfo() {
     float time_limit_ms = TIME_LIMIT_MS;
     int max_games = MAX_GAMES;
@@ -90,7 +92,10 @@ void Game::run() {
         } else {
             // NPC move
             std::cout << "Player " << (turn + 1) << " turn:\n";
-            board = players[turn].make_move(board);
+            board = players[turn].make_move(board); // TODO: check behaviour if no available moves
+
+            // TODO: Print out the move made by the NPC
+
         }
 
         // Win no moves: Check for no available moves compared to prev
@@ -145,6 +150,104 @@ void Game::run() {
         turn = 1 - turn;
     }
     board.print_board();
+}
+
+Move Game::get_move(Board prev, Board next) {
+    uint32_t start_end = prev.whiteToMove ? prev.white ^ next.white : prev.black ^ next.black;
+    uint32_t start = prev.whiteToMove ? prev.white & start_end : prev.black & start_end;
+    uint32_t end = prev.whiteToMove ? next.white & start_end : next.black & start_end;
+    uint32_t captured = prev.whiteToMove ? prev.black ^ next.black : prev.white ^ next.white;
+
+    return Move{start, end, captured};
+}
+
+std::string Game::get_move_string(Move move) {
+    std::pair<char, char> start = position_to_coordinates(move.start);
+    std::pair<char, char> end = position_to_coordinates(move.end);
+
+    // If move doesn't capture any pieces
+    if (!move.captured) {
+        return std::string(1, start.first) + std::string(1, start.second) + "-" + std::string(1, end.first) + std::string(1, end.second);
+    }
+
+    std::string move_str = std::string(1, start.first) + std::string(1, start.second);
+
+    while(move.captured) {
+        
+        std::pair<char, char> captured = position_to_coordinates(move.captured);
+        move_str += ":" + std::string(1, captured.first) + std::string(1, captured.second);
+    }
+
+    return move_str;
+}
+
+std::vector<std::pair<char, char>> Game::get_capture_path(const Board &board, const Move &move) {
+    std::vector<std::pair<char, char> path;
+    auto start = position_to_coordinates(move.start);
+    aut end = position_to_coordinates(move.end);
+    path.push_back(start);
+
+    // If there are no captured pieces, it's a simple move.
+    if (!move.captured) {
+        path.push_back(move.end);
+        return path;
+    }
+
+    // Convert captured bitmask into a list of captured positions.
+    std::vector<uint32_t> captured_positions;
+    uint32_t temp = move.captured;
+    uint32_t bit = 1;
+    while (temp) {
+        if (temp & bit) {
+            captured_positions.push_back(bit);
+            temp ^= bit;
+        }
+        bit <<= 1;
+    }
+
+    // Get ordered list of captured positions
+    auto current = start;
+    // Create a vector of possible captured positions for current position
+    vector<pair<char, char>> captured_candidates;
+    pair<char, char> captured;
+    for (int i = 0; i < captured_positions.size(); ++i) {
+        captured = position_to_coordinates(captured_positions[i]);
+        if (are_on_same_diagonal(current.first, current.second, captured.first, captured.second)) {
+            captured_candidates.push_back(captured);
+        }
+    }
+
+    // If there is more than one candidate, choose the one the closest one that isn't on the same diagonal as end position
+    if (captured_candidates.size() > 1) {
+        int min_distance = 9;
+        int min_idx = -1;
+        for (int i = 0; i < captured_candidates.size(); ++i) {
+            if (!are_on_same_diagonal(captured_candidates[i].first, captured_candidates[i].second, end.first, end.second)) {
+                continue;
+            }
+
+            int distance = abs(captured_candidates[i].first - current.first);
+            if (distance < min_distance) {
+                min_distance = distance;
+                min_idx = i;
+            }
+        }
+        if (min_idx == -1) {
+            captured = captured_candidates[0];
+        }
+
+        captured = captured_candidates[min_idx];
+    } else {
+        captured = captured_candidates[0];
+    }
+
+
+
+    while (!captured_positions.empty()) {
+
+    }
+
+
 }
 
 Move Game::parse_user_input(Board board) {
