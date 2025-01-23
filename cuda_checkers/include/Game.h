@@ -20,6 +20,7 @@ public:
 
     ~Game();
 
+    static Game getGameInfo();
     void run();
     Move parse_user_input(Board board);
     Move validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board board);

@@ -6,16 +6,61 @@
 #include "Board.h"
 #include "Move.h"
 
+static Game Game::getGameInfo() {
+    float time_limit_ms = TIME_LIMIT_MS;
+    int max_games = MAX_GAMES;
+    int max_iterations = MAX_ITERATIONS;
+    bool is_first_cpu = true;
+    bool is_second_cpu = true;
+    bool is_first_manual = false;
+    bool is_second_manual = false;
+
+    std::cout << "Enter time limit for each move in milliseconds (default: 1000): ";
+    std::cin >> time_limit_ms;
+
+    std::cout << "Enter maximum number of games to simulate (default: 1000): ";
+    std::cin >> max_games;
+
+    std::cout << "Enter maximum number of iterations tree expansion (default: 1000): ";
+    std::cin >> max_iterations;
+
+    std::cout << "Is the first player manual? (y/n, default: n): ";
+    char is_first_manual_input;
+    std::cin >> is_first_manual_input;
+    is_first_manual = is_first_manual_input == 'y' || is_first_manual_input == 'Y';
+
+    if (!is_first_manual) {
+        std::cout << "Is the first player a CPU? (y/n, default: y): ";
+        char is_first_cpu_input;
+        std::cin >> is_first_cpu_input;
+        is_first_cpu = is_first_cpu_input == 'y' || is_first_cpu_input == 'Y';
+    }
+
+    std::cout << "Is the second player manual? (y/n, default: n): ";
+    char is_second_manual_input;
+    std::cin >> is_second_manual_input;
+    is_second_manual = is_second_manual_input == 'y' || is_second_manual_input == 'Y';
+
+    if (!is_second_manual) {
+        std::cout << "Is the second player a CPU? (y/n, default: y): ";
+        char is_second_cpu_input;
+        std::cin >> is_second_cpu_input;
+        is_second_cpu = is_second_cpu_input == 'y' || is_second_cpu_input == 'Y';
+    }
+
+    return Game(time_limit_ms, max_games, max_iterations, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
+}
+
 Game::Game(float time_limit_ms, int max_games, int max_iterations, bool is_first_cpu, 
            bool is_second_cpu, bool is_first_manual, bool is_second_manual) :
     time_limit_ms(time_limit_ms), max_games(max_games), max_iterations(max_iterations), is_first_cpu(is_first_cpu), 
     is_second_cpu(is_second_cpu), is_first_manual(is_first_manual), is_second_manual(is_second_manual) {
 
     if (!is_first_manual)
-    players[0] = Player(true, is_first_cpu, max_games, max_iterations, time_limit_ms);
+        players[0] = Player(true, is_first_cpu, max_games, max_iterations, time_limit_ms);
 
     if (!is_second_manual)
-    players[1] = Player(false, is_second_cpu, max_games, max_iterations, time_limit_ms);
+        players[1] = Player(false, is_second_cpu, max_games, max_iterations, time_limit_ms);
 };
 
 Game::~Game() {
