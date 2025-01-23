@@ -36,6 +36,8 @@ Player::Player(bool is_white, bool is_cpu, int max_games, int max_iterations, fl
         init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
         CUDA_CHECK(cudaGetLastError());
         CUDA_CHECK(cudaDeviceSynchronize());
+    } else {
+        states = nullptr;
     }
 }
 
@@ -53,12 +55,16 @@ Player::Player(Board board, bool is_white, bool is_cpu,
         init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
         CUDA_CHECK(cudaGetLastError());
         CUDA_CHECK(cudaDeviceSynchronize());
+    } else {
+        states = nullptr;
     }
 };
 
 Player::~Player() {
     delete root;
-    CUDA_CHECK(cudaFree(states));
+
+    if (states != nullptr)
+        CUDA_CHECK(cudaFree(states));
 };
 
 int Player::findEqualChild(Board board) {
