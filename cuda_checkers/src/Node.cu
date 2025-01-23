@@ -1,14 +1,18 @@
 #include "Node.h"
 #include "Game.h"
+#include <iostream>
 
 Node::Node(Board board, Node *parent) : board(board), parent(parent), children(), score(0), visits(0) {
-    Move *moves = new Move[MAX_MOVES];
-    Move *stack = new Move[MAX_MOVES];
+    // Move *moves = new Move[MAX_MOVES];
+    // Move *stack = new Move[MAX_MOVES];
+    Move moves[MAX_MOVES];
+    Move stack[MAX_MOVES];
 
     int num_moves = this->board.generate_moves(moves, stack);
     for (int i = 0; i < num_moves; i++) {
         possible_moves.push(moves[i]);
     }
+    std::cerr << "Generated " << num_moves << " moves\n";
 
     if (parent == nullptr) {
         white_queen_moves = 0;
@@ -36,26 +40,73 @@ Node::Node(Board board, Node *parent) : board(board), parent(parent), children()
         }
     }
     
-    delete[] moves;
-    delete[] stack;
+    // delete[] moves;
+    // delete[] stack;
 }
 
-Node::Node(Node *parent, bool whiteToMove) : board(Board(whiteToMove)), parent(nullptr), children(), score(0), visits(0) {
-    Move *moves = new Move[MAX_MOVES];
-    Move *stack = new Move[MAX_MOVES];
+Node::Node(Node *parent, bool whiteToMove) : parent(nullptr), children(), score(0), visits(0) {
+    this->board = Board(whiteToMove);
+
+    // Move *moves = new Move[MAX_MOVES];
+    // Move *stack = new Move[MAX_MOVES];
+    Move moves[MAX_MOVES];
+    Move stack[MAX_MOVES];
 
     int num_moves = this->board.generate_moves(moves, stack);
     for (int i = 0; i < num_moves; i++) {
         possible_moves.push(moves[i]);
     }
+    std::cerr << "Generated " << num_moves << " moves\n";
 
-    delete[] moves;
-    delete[] stack;
+    if (parent == nullptr) {
+        white_queen_moves = 0;
+        black_queen_moves = 0;
+    } else if (Game::count_set_bits(board.white | board.black) != Game::count_set_bits(parent->board.white | parent->board.black)) {
+        if (board.whiteToMove) {
+            white_queen_moves = parent->white_queen_moves;
+            black_queen_moves = 0;
+        } else {
+            white_queen_moves = 0;
+            black_queen_moves = parent->black_queen_moves;
+        }
+    } else {
+        white_queen_moves = parent->white_queen_moves;
+        black_queen_moves = parent->black_queen_moves;
+
+        uint32_t new_queens = board.white | board.black;
+        uint32_t parent_queens = parent->board.white | parent->board.black;
+        if (Game::count_set_bits(new_queens) == Game::count_set_bits(parent_queens) && new_queens != parent_queens) {
+            if (board.whiteToMove) {
+                black_queen_moves++;
+            } else {
+                white_queen_moves++;
+            }
+        }
+    }
+
+    // delete[] moves;
+    // delete[] stack;
 }
 
 Node::~Node() {
+    std::cerr << "Deleting node\n";
+    int i = 0;
     for (Node *child : children) {
-        delete child;
+        if (child != nullptr) {
+            std::cerr << "Deleting child " << i << "\n";
+            delete child;
+        }
+        i++;
+    }
+    
+    // Find pointer to this node in parent and remove it
+    if (parent != nullptr) {
+        for (int j = 0; j < parent->children.size(); j++) {
+            if (parent->children[j] != nullptr && parent->children[j]->board.is_equal(board)) {
+                parent->children[j] = nullptr;
+                break;
+            }
+        }
     }
 }
 
@@ -72,13 +123,29 @@ bool Node::is_expanded() const {
 
 bool Node::is_end() const {
     // If >= 15 queen moves wihout captures, the game is over
-    if (white_queen_moves >= 15 && black_queen_moves >= 15) return true;
+    if (white_queen_moves >= 15 && black_queen_moves >= 15) {
+        std::cerr << "Queen moves limit reached\n";
+        return true;
+    }
 
     // If no children (no moves possible), the game is over
-    if (children.empty()) return true;
+    if (possible_moves.empty() && children.empty()) {
+        std::cerr << "No moves\n";
+        return true;
+    }
 
     // If no white or black pieces, the game is over
-    return board.white == 0 || board.black == 0;
+    if (board.white == 0) {
+        std::cerr << "No white pieces\n";
+        return true;
+    }
+
+    if (board.black == 0) {
+        std::cerr << "No black pieces\n";
+        return true;
+    }
+    
+    return false;
 }
 
 int Node::white_score() const {
@@ -86,7 +153,7 @@ int Node::white_score() const {
     if (white_queen_moves >= 15 && black_queen_moves >= 15) return 0.5;
 
     // If no children (no moves possible), the game is over
-    if (children.empty()) return (board.whiteToMove) ? 0 : 1;
+    if (children.empty() && possible_moves.empty()) return (board.whiteToMove) ? 0 : 1;
 
     // If no white or black pieces, the game is over
     if (board.white == 0) return 0;

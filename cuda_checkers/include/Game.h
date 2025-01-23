@@ -5,7 +5,7 @@
 
 class Game {
 public:
-    Player players[2];
+    Player *players[2];
     bool is_first_manual;
     bool is_second_manual;
     bool is_first_cpu;

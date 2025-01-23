@@ -50,6 +50,8 @@ Game Game::getGameInfo() {
         is_second_cpu = is_second_cpu_input == 'y' || is_second_cpu_input == 'Y';
     }
 
+    // TODO: delete
+    std::cout << "Creating game" << std::endl;
     return Game(time_limit_ms, max_games, max_iterations, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
 }
 
@@ -57,17 +59,17 @@ Game::Game(float time_limit_ms, int max_games, int max_iterations, bool is_first
            bool is_second_cpu, bool is_first_manual, bool is_second_manual) :
     time_limit_ms(time_limit_ms), max_games(max_games), max_iterations(max_iterations), is_first_cpu(is_first_cpu), 
     is_second_cpu(is_second_cpu), is_first_manual(is_first_manual), is_second_manual(is_second_manual) {
-
+    
     if (!is_first_manual)
-        players[0] = Player(true, is_first_cpu, max_games, max_iterations, time_limit_ms);
+        players[0] = new Player(true, is_first_cpu, max_games, max_iterations, time_limit_ms);
 
     if (!is_second_manual)
-        players[1] = Player(false, is_second_cpu, max_games, max_iterations, time_limit_ms);
+        players[1] = new Player(false, is_second_cpu, max_games, max_iterations, time_limit_ms);
 };
 
 Game::~Game() {
-    // delete players[0];
-    // delete players[1];
+    delete players[0];
+    delete players[1];
 }
 
 void Game::run() {
@@ -92,7 +94,7 @@ void Game::run() {
         } else {
             // NPC move
             std::cout << "Player " << (turn + 1) << " turn:\n";
-            board = players[turn].make_move(board); // TODO: check behaviour if no available moves
+            board = (*players)[turn].make_move(board); // TODO: check behaviour if no available moves
 
             // TODO: Print out the move made by the NPC
             Move m = get_move(temp, board);

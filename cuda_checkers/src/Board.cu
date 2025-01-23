@@ -18,15 +18,15 @@ __host__ void Board::print_board() {
 
     // Depending on whose move it is, decide the orientation of the board
     // TODO: uncomment later, easier to debug this way
-    // if (!whiteToMove) {
-        // for (int row = 0; row < 8; ++row) {
-        //     std::cout << 1 + row << ' '; // Print row number
-        //     for (int col = 0; col < 8; ++col) {
-        //         print_square(row, col);
-        //     }
-        //     std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
-        // }
-    // } else {
+    if (!whiteToMove) {
+        for (int row = 0; row < 8; ++row) {
+            std::cout << 1 + row << ' '; // Print row number
+            for (int col = 0; col < 8; ++col) {
+                print_square(row, col);
+            }
+            std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+        }
+    } else {
         for (int row = 7; row >= 0; --row) {
             std::cout << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
@@ -34,7 +34,7 @@ __host__ void Board::print_board() {
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
-    // }
+    }
 
     // Print column headers
     std::cout << "   A  B  C  D  E  F  G  H\n";
