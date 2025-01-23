@@ -29,7 +29,6 @@ __global__ void init_curand(curandState* state, unsigned long seed) {
 Player::Player(bool is_white, bool is_cpu, int max_games, int max_iterations, float time_limit_ms) :
                         is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), max_iterations(max_iterations), max_games(max_games) {
     root = new Node(nullptr, true);
-    root->board.print_board(); // TODO: delete
 
     // Initialize random states
     if (!is_cpu) {
@@ -49,7 +48,6 @@ Player::Player(Board board, bool is_white, bool is_cpu,
     is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), 
     max_iterations(max_iterations), max_games(max_games) {
     root = new Node(board, nullptr);
-    root->board.print_board(); // TODO: delete
 
     // Initialize random states
     if (!is_cpu) {
@@ -64,8 +62,6 @@ Player::Player(Board board, bool is_white, bool is_cpu,
 };
 
 Player::~Player() {
-    std::cerr << "Deleting player\n";
-
     delete root;
     if (states != nullptr)
         CUDA_CHECK(cudaFree(states));
@@ -86,39 +82,27 @@ int Player::findEqualChild(Board board) {
 }
 
 void Player::move_root(Board startBoard) {
-    // TODO: delete prints
-    std::cerr << "Moving root\n";
-    std::cerr << "Root board\n";
-    root->board.print_board();
-    std::cerr << "Start board\n";
-    startBoard.print_board();
 
     if (root == nullptr) {
-        std::cerr << "Root is null\n";
         root = new Node(startBoard, nullptr);
         return;
     }
 
     if (root->board.is_equal(startBoard)) {
-        std::cerr << "Root is equal\n";
         return;
     }
 
     int index = findEqualChild(startBoard);
     if (index == -1) {
-        std::cerr << "No equal child found\n";
         delete root;
         root = new Node(startBoard, nullptr);
         return;
     }
 
-    std::cerr << "Equal child found: " << index << "\n";
     Node *temp = root;
     root = root->children[index];
-    root->board.print_board();
     root->parent = nullptr;
     temp->children[index] = nullptr;
-    std::cerr << "Deleting temp\n";
     delete temp;
 }
 
@@ -228,10 +212,9 @@ int Player::mcts_loop() {
     auto time_limit = std::chrono::milliseconds((int) time_limit_ms);
 
     // Run the MCTS algorithm
-    std::cerr << "Running MCTS loop\n";
     int i = 0;
     for (i = 0; i < max_iterations; i++) {
-        std::cerr << "Iteration " << i << "\n";
+        // std::cerr << "Iteration " << i << "\n";
         auto current_time = std::chrono::high_resolution_clock::now();
         if (current_time - start_time >= time_limit) {
             break;
@@ -239,11 +222,8 @@ int Player::mcts_loop() {
 
         // 1. Selection
         // Find nodes for expansion
-        std::cerr << "Selecting\n";
         Node *selected = select();
         if (selected->is_end()) {
-            std::cerr << "Selected node is end\n";
-            selected->board.print_board();
             float score = selected->white_score();
             assert (score >= 0);
             if (!is_white) score = 1 - score;
@@ -253,17 +233,14 @@ int Player::mcts_loop() {
 
         // 2. Expansion
         // For each node, create a new node and add it to the tree
-        std::cerr << "Expanding\n";
         Node *new_node = expand(selected);
 
         // 3. Simulation
         // Run simulations on the new nodes
-        std::cerr << "Simulating\n";
         float score = simulate(new_node);
 
         // 4. Backpropagation
         // Backpropagate the results up the tree
-        std::cerr << "Backpropagating\n";
         backpropagate(new_node, score);
     }
 
@@ -288,16 +265,12 @@ Node* Player::choose_move() {
 Board Player::make_move(Board start_board) {
     // Move root to the current board
     move_root(start_board);
-    std::cerr << "Root board after moving\n";
-    root->board.print_board();
 
     // If root doesn't have any children, return the current board
-    std::cerr << "Root is end: " << root->is_end() << "\n";
     if (root->is_end()) {
         return start_board;
     }
 
-    // std:cerr << "Running MCTS\n"; // TODO: delete
     // Run the MCTS algorithm
     mcts_loop();
 

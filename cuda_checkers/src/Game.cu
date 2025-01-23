@@ -8,6 +8,7 @@
 
 using namespace std;
 
+// TODO: change parameters and mcts loop, in loop only time limit, different nr of simulations for reach player
 Game Game::getGameInfo() {
     float time_limit_ms = TIME_LIMIT_MS;
     int max_games = MAX_GAMES;
@@ -50,8 +51,6 @@ Game Game::getGameInfo() {
         is_second_cpu = is_second_cpu_input == 'y' || is_second_cpu_input == 'Y';
     }
 
-    // TODO: delete
-    std::cout << "Creating game" << std::endl;
     return Game(time_limit_ms, max_games, max_iterations, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
 }
 
@@ -94,7 +93,7 @@ void Game::run() {
         } else {
             // NPC move
             std::cout << "Player " << (turn + 1) << " turn:\n";
-            board = (*players)[turn].make_move(board); // TODO: check behaviour if no available moves
+            board = (*(players[turn])).make_move(board); // TODO: check behaviour if no available moves
 
             // TODO: Print out the move made by the NPC
             Move m = get_move(temp, board);

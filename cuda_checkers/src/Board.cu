@@ -17,7 +17,6 @@ __host__ void Board::print_board() {
     std::cout << "   A  B  C  D  E  F  G  H\n";
 
     // Depending on whose move it is, decide the orientation of the board
-    // TODO: uncomment later, easier to debug this way
     if (!whiteToMove) {
         for (int row = 0; row < 8; ++row) {
             std::cout << 1 + row << ' '; // Print row number

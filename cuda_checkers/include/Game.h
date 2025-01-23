@@ -15,7 +15,7 @@ public:
     int max_games;
     int max_iterations;
 
-    Game(float time_limit_ms = TIME_LIMIT_MS, int max_games = MAX_GAMES, int max_iterations = MAX_ITERATIONS,
+    explicit Game(float time_limit_ms = TIME_LIMIT_MS, int max_games = MAX_GAMES, int max_iterations = MAX_ITERATIONS,
             bool is_first_cpu = true, bool is_second_cpu = true, bool is_first_manual = false, bool is_second_manual = false);
 
     ~Game();

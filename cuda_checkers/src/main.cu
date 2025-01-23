@@ -7,7 +7,8 @@
 #include "../include/Game.h"
 
 int main() {
-    Game game = Game::getGameInfo();
+    // Game game = Game::getGameInfo();
+    Game game = Game();
     game.run();
     return 0;
 }
