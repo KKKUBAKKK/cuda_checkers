@@ -31,12 +31,10 @@ public:
     bool is_cpu;
 
     explicit Player(bool is_white = true, bool is_cpu = true, 
-    int max_games = MAX_GAMES, int max_iterations = MAX_ITERATIONS, 
-    float time_limit_ms = TIME_LIMIT_MS);
+    int max_games = MAX_GAMES_CPU, float time_limit_ms = TIME_LIMIT_MS);
 
     Player(Board board, bool is_white = true, bool is_cpu = true, 
-    int max_games = MAX_GAMES, int max_iterations = MAX_ITERATIONS, 
-    float time_limit_ms = TIME_LIMIT_MS);
+    int max_games = MAX_GAMES_CPU, float time_limit_ms = TIME_LIMIT_MS);
 
     ~Player();
 

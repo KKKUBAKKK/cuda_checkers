@@ -84,7 +84,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
 
         Move m = { piece, piece, 0 };
         auto c = Game::position_to_coordinates(piece);
-        std::string s = std::string(1, c.first) + std::to_string(c.second);
+        std::string s = std::string(1, c.first) + std::string(1, c.second);
         std::pair<Move, std::string> p = { m, s};
         stack.push(p);
     }
@@ -124,7 +124,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
                     t.end = m.end << (UP_LEFT_CAPT);
                     t.captured |= (m.end << left[0]);
                     auto c = Game::position_to_coordinates(t.end);
-                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::string(1, c.second);
                     std::pair<Move, std::string> pt = { t, s };
                     stack.push(pt);
                 }
@@ -133,7 +133,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
                     t.end = m.end >> (DOWN_LEFT_CAPT);
                     t.captured |= (m.end >> left[1]);
                     auto c = Game::position_to_coordinates(t.end);
-                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::string(1, c.second);
                     std::pair<Move, std::string> pt = { t, s };
                     stack.push(pt);
                 }
@@ -144,7 +144,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
                     t.end = m.end << (UP_RIGHT_CAPT);
                     t.captured |= (m.end << right[0]);
                     auto c = Game::position_to_coordinates(t.end);
-                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::string(1, c.second);
                     std::pair<Move, std::string> pt = { t, s };
                     stack.push(pt);
                 }
@@ -153,7 +153,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
                     t.end = m.end >> (DOWN_RIGHT_CAPT);
                     t.captured |= (m.end >> right[1]);
                     auto c = Game::position_to_coordinates(t.end);
-                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::string(1, c.second);
                     std::pair<Move, std::string> pt = { t, s };
                     stack.push(pt);
                 }
@@ -204,7 +204,7 @@ std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
                         Move t = tm;
                         t.end = position;
                         auto c = Game::position_to_coordinates(t.end);
-                        std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                        std::string s = move_pair.second + ":" + std::string(1, c.first) + std::string(1, c.second);
                         std::pair<Move, std::string> pt = { t, s };
                         stack.push(pt);
                         continue;

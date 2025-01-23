@@ -8,11 +8,11 @@
 
 using namespace std;
 
-// TODO: change parameters and mcts loop, in loop only time limit, different nr of simulations for reach player
+// TODO: move output to the file
 Game Game::getGameInfo() {
     float time_limit_ms = TIME_LIMIT_MS;
-    int max_games = MAX_GAMES;
-    int max_iterations = MAX_ITERATIONS;
+    int max_games_one = MAX_GAMES_CPU;
+    int max_games_two = MAX_GAMES_CPU;
     bool is_first_cpu = true;
     bool is_second_cpu = true;
     bool is_first_manual = false;
@@ -20,50 +20,91 @@ Game Game::getGameInfo() {
 
     std::cout << "Enter time limit for each move in milliseconds (default: 1000): ";
     std::cin >> time_limit_ms;
-
-    std::cout << "Enter maximum number of games to simulate (default: 1000): ";
-    std::cin >> max_games;
-
-    std::cout << "Enter maximum number of iterations tree expansion (default: 1000): ";
-    std::cin >> max_iterations;
+    if (time_limit_ms < 0) {
+        std::cerr << "Using default value." << std::endl;
+        time_limit_ms = TIME_LIMIT_MS;
+    }
 
     std::cout << "Is the first player manual? (y/n, default: n): ";
     char is_first_manual_input;
     std::cin >> is_first_manual_input;
-    is_first_manual = is_first_manual_input == 'y' || is_first_manual_input == 'Y';
+    if (is_first_manual_input == 'y' || is_first_manual_input == 'Y') {
+        is_first_manual = true;
+    } else if (is_first_manual_input != 'n' && is_first_manual_input != 'N') {
+        std::cerr << "Using default value." << std::endl;
+        is_first_manual = false;
+    } else {
+        is_first_manual = false;
+    }
+    
 
     if (!is_first_manual) {
-        std::cout << "Is the first player a CPU? (y/n, default: y): ";
+        std::cout << "Is the first player a CPU? (y for CPU, n for GPU, default: y): ";
         char is_first_cpu_input;
         std::cin >> is_first_cpu_input;
-        is_first_cpu = is_first_cpu_input == 'y' || is_first_cpu_input == 'Y';
+        if (is_first_cpu_input == 'y' || is_first_cpu_input == 'Y') {
+            is_first_cpu = true;
+        } else if (is_first_cpu_input != 'n' && is_first_cpu_input != 'N') {
+            std::cerr << "Using default value." << std::endl;
+            is_first_cpu = true;
+        } else {
+            is_first_cpu = false;
+        }
+
+        std::cout << "Enter maximum number of games to simulate for Player 1 (default: CPU=1, GPU=1000): ";
+        std::cin >> max_games_one;
+        if (max_games_one < 0) {
+            std::cerr << "Using default value." << std::endl;
+            max_games_one = is_first_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
+        }
     }
 
     std::cout << "Is the second player manual? (y/n, default: n): ";
     char is_second_manual_input;
     std::cin >> is_second_manual_input;
-    is_second_manual = is_second_manual_input == 'y' || is_second_manual_input == 'Y';
-
-    if (!is_second_manual) {
-        std::cout << "Is the second player a CPU? (y/n, default: y): ";
-        char is_second_cpu_input;
-        std::cin >> is_second_cpu_input;
-        is_second_cpu = is_second_cpu_input == 'y' || is_second_cpu_input == 'Y';
+    if (is_second_manual_input == 'y' || is_second_manual_input == 'Y') {
+        is_second_manual = true;
+    } else if (is_second_manual_input != 'n' && is_second_manual_input != 'N') {
+        std::cerr << "Using default value." << std::endl;
+        is_second_manual = false;
+    } else {
+        is_second_manual = false;
     }
 
-    return Game(time_limit_ms, max_games, max_iterations, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
+    if (!is_second_manual) {
+        std::cout << "Is the second player a CPU? (y for CPU, n for GPU, default: y): ";
+        char is_second_cpu_input;
+        std::cin >> is_second_cpu_input;
+        if (is_second_cpu_input == 'y' || is_second_cpu_input == 'Y') {
+            is_second_cpu = true;
+        } else if (is_second_cpu_input != 'n' && is_second_cpu_input != 'N') {
+            std::cerr << "Using default value." << std::endl;
+            is_second_cpu = true;
+        } else {
+            is_second_cpu = false;
+        }
+
+        std::cout << "Enter maximum number of games to simulate for Player 2 (default: CPU=1, GPU=1000): ";
+        std::cin >> max_games_two;
+        if (max_games_two < 0) {
+            std::cerr << "Using default value." << std::endl;
+            max_games_two = is_second_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
+        }
+    }
+
+    return Game(time_limit_ms, max_games_one, max_games_two, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
 }
 
-Game::Game(float time_limit_ms, int max_games, int max_iterations, bool is_first_cpu, 
+Game::Game(float time_limit_ms, int max_games_one, int max_games_two, bool is_first_cpu, 
            bool is_second_cpu, bool is_first_manual, bool is_second_manual) :
-    time_limit_ms(time_limit_ms), max_games(max_games), max_iterations(max_iterations), is_first_cpu(is_first_cpu), 
+    time_limit_ms(time_limit_ms), max_games_one(max_games_one), max_games_two(max_games_two), is_first_cpu(is_first_cpu), 
     is_second_cpu(is_second_cpu), is_first_manual(is_first_manual), is_second_manual(is_second_manual) {
     
     if (!is_first_manual)
-        players[0] = new Player(true, is_first_cpu, max_games, max_iterations, time_limit_ms);
+        players[0] = new Player(true, is_first_cpu, max_games_one, time_limit_ms);
 
     if (!is_second_manual)
-        players[1] = new Player(false, is_second_cpu, max_games, max_iterations, time_limit_ms);
+        players[1] = new Player(false, is_second_cpu, max_games_two, time_limit_ms);
 };
 
 Game::~Game() {
@@ -85,45 +126,21 @@ void Game::run() {
         board.print_board();
         temp = board;
 
+        std::string color = players[turn]->is_white ? "White" : "Black";
         if ((turn == 0 && is_first_manual) || (turn == 1 && is_second_manual)) {
             // Manual move
-            std::cout << "Player " << (turn + 1) << " turn:" << std::endl;
+            std::cout << "Player " << (turn + 1) << " " << color << " turn:" << std::endl;
             Move move = parse_user_input(board);
             board = board.apply_move(move);
         } else {
             // NPC move
-            std::cout << "Player " << (turn + 1) << " turn:\n";
+            std::cout << "Player " << (turn + 1) << " " << color << " turn:\n";
             board = (*(players[turn])).make_move(board); // TODO: check behaviour if no available moves
 
-            // TODO: Print out the move made by the NPC
             Move m = get_move(temp, board);
             std::string move_str = get_move_string(m, temp);
-            std::cout << "NPC move: " << move_str << std::endl;
+            std::cout << "Move: " << move_str << std::endl;
             assert (move_str != "Invalid move");
-        }
-
-        // Win no moves: Check for no available moves compared to prev
-        if (board.white == temp.white && board.black == temp.black && board.queens == temp.queens) {
-            game_over = true;
-            std::cout << "Game over! No moves available! ";
-            if (temp.whiteToMove) {
-                std::cout << "Black wins!" << std::endl;
-            } else {
-                std::cout << "White wins!" << std::endl;
-            }
-            break;
-        }
-
-        // Check for game end conditions
-        if (board.white == 0 || board.black == 0) {
-            game_over = true;
-            std::cout << "Game over! No pawns left! ";
-            if (board.white == 0) {
-                std::cout << "Black wins!\n";
-            } else {
-                std::cout << "White wins!\n";
-            }
-            break;
         }
 
         // Update draw condition counters
@@ -147,6 +164,30 @@ void Game::run() {
         if (white_queen_turns >= 15 && black_queen_turns >= 15) {
             game_over = true;
             std::cout << "Game over! Draw!\n";
+            break;
+        }
+
+        // Win no moves: Check for no available moves compared to prev
+        if (board.white == temp.white && board.black == temp.black && board.queens == temp.queens) {
+            game_over = true;
+            std::cout << "Game over! No moves available! ";
+            if (temp.whiteToMove) {
+                std::cout << "Black wins!" << std::endl;
+            } else {
+                std::cout << "White wins!" << std::endl;
+            }
+            break;
+        }
+
+        // Check for game end conditions
+        if (board.white == 0 || board.black == 0) {
+            game_over = true;
+            std::cout << "Game over! No pawns left! ";
+            if (board.white == 0) {
+                std::cout << "Black wins!\n";
+            } else {
+                std::cout << "White wins!\n";
+            }
             break;
         }
 

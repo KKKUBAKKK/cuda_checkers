@@ -12,10 +12,10 @@ public:
     bool is_second_cpu;
 
     float time_limit_ms;
-    int max_games;
-    int max_iterations;
+    int max_games_one;
+    int max_games_two;
 
-    explicit Game(float time_limit_ms = TIME_LIMIT_MS, int max_games = MAX_GAMES, int max_iterations = MAX_ITERATIONS,
+    explicit Game(float time_limit_ms = TIME_LIMIT_MS, int max_games_one = MAX_GAMES_CPU, int max_games_two = MAX_GAMES_CPU,
             bool is_first_cpu = true, bool is_second_cpu = true, bool is_first_manual = false, bool is_second_manual = false);
 
     ~Game();

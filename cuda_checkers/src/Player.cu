@@ -26,8 +26,8 @@ __global__ void init_curand(curandState* state, unsigned long seed) {
     curand_init(seed, idx, 0, &state[idx]);
 }
 
-Player::Player(bool is_white, bool is_cpu, int max_games, int max_iterations, float time_limit_ms) :
-                        is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), max_iterations(max_iterations), max_games(max_games) {
+Player::Player(bool is_white, bool is_cpu, int max_games, float time_limit_ms) :
+                        is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), max_games(max_games) {
     root = new Node(nullptr, true);
 
     // Initialize random states
@@ -43,10 +43,8 @@ Player::Player(bool is_white, bool is_cpu, int max_games, int max_iterations, fl
 }
 
 Player::Player(Board board, bool is_white, bool is_cpu, 
-    int max_games, int max_iterations, 
-    float time_limit_ms) :
-    is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), 
-    max_iterations(max_iterations), max_games(max_games) {
+    int max_games, float time_limit_ms) :
+    is_white(is_white), is_cpu(is_cpu), time_limit_ms(time_limit_ms), max_games(max_games) {
     root = new Node(board, nullptr);
 
     // Initialize random states
@@ -213,8 +211,7 @@ int Player::mcts_loop() {
 
     // Run the MCTS algorithm
     int i = 0;
-    for (i = 0; i < max_iterations; i++) {
-        // std::cerr << "Iteration " << i << "\n";
+    while (true) {
         auto current_time = std::chrono::high_resolution_clock::now();
         if (current_time - start_time >= time_limit) {
             break;
@@ -242,6 +239,8 @@ int Player::mcts_loop() {
         // 4. Backpropagation
         // Backpropagate the results up the tree
         backpropagate(new_node, score);
+
+        i++;
     }
 
     return i;
