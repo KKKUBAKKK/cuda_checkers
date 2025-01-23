@@ -25,6 +25,7 @@ Game::~Game() {
 
 void Game::run() {
     Board board;
+    Board temp = board;
     bool game_over = false;
     int turn = 0;
     int white_queen_turns = 0;
@@ -34,6 +35,7 @@ void Game::run() {
 
     while (!game_over) {
         board.print_board();
+        temp = board;
 
         if ((turn == 0 && is_first_manual) || (turn == 1 && is_second_manual)) {
             // Manual move
@@ -46,13 +48,22 @@ void Game::run() {
             board = players[turn].make_move(board);
         }
 
-        // TODO: add draw condition and win if no moves available
-        
+        // Win no moves: Check for no available moves compared to prev
+        if (board.white == temp.white && board.black == temp.black && board.queens == temp.queens) {
+            game_over = true;
+            std::cout << "Game over! No moves available! ";
+            if (temp.whiteToMove) {
+                std::cout << "Black wins!" << std::endl;
+            } else {
+                std::cout << "White wins!" << std::endl;
+            }
+            break;
+        }
 
         // Check for game end conditions
         if (board.white == 0 || board.black == 0) {
             game_over = true;
-            std::cout << "Game over! ";
+            std::cout << "Game over! No pawns left! ";
             if (board.white == 0) {
                 std::cout << "Black wins!\n";
             } else {
@@ -61,9 +72,34 @@ void Game::run() {
             break;
         }
 
+        // Update draw condition counters
+        uint32_t temp_queens = temp.whiteToMove ? temp.queens & temp.white : temp.queens & temp.black;
+        uint32_t board_queens = temp.whiteToMove ? board.queens & board.white : board.queens & board.black;
+        if (count_set_bits(temp.white | temp.black) != count_set_bits(board.white | board.black)) {
+            if (temp.whiteToMove) {
+                white_queen_turns = 0;
+            } else {
+                black_queen_turns = 0;
+            }
+        } else if (count_set_bits(temp_queens) == count_set_bits(board_queens) && temp_queens != board_queens) {
+            if (temp.whiteToMove) {
+                white_queen_turns++;
+            } else {
+                black_queen_turns++;
+            }
+        }
+
+        // Check for draw
+        if (white_queen_turns >= 15 && black_queen_turns >= 15) {
+            game_over = true;
+            std::cout << "Game over! Draw!\n";
+            break;
+        }
+
         // Switch turn
         turn = 1 - turn;
     }
+    board.print_board();
 }
 
 Move Game::parse_user_input(Board board) {
@@ -365,4 +401,14 @@ bool Game::are_positions_on_diagonal_empty(char from_col, char from_row, char to
     }
 
     return true;
+}
+
+// Function to count the number of bits set to one in a uint32_t value
+int Game::count_set_bits(uint32_t n) {
+    int count = 0;
+    while (n) {
+        count += n & 1;
+        n >>= 1;
+    }
+    return count;
 }

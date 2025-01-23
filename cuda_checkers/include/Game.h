@@ -27,6 +27,7 @@ public:
     std::pair<char, char> position_to_coordinates(uint32_t position);
     uint32_t coordinates_to_position(char col, char row);
     bool are_positions_on_diagonal_empty(char from_col, char from_row, char to_col, char to_row, uint32_t current_player, uint32_t opponent);
+    int count_set_bits(uint32_t n);
 };
 
 #endif // GAME_H
