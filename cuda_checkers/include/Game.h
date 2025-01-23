@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include <Player.h>
+#include <fstream>
 
 class Game {
 public:
@@ -10,17 +11,18 @@ public:
     bool is_second_manual;
     bool is_first_cpu;
     bool is_second_cpu;
+    std::ofstream file;
 
     float time_limit_ms;
     int max_games_one;
     int max_games_two;
 
-    explicit Game(float time_limit_ms = TIME_LIMIT_MS, int max_games_one = MAX_GAMES_CPU, int max_games_two = MAX_GAMES_CPU,
+    explicit Game(std::string fileName, float time_limit_ms = TIME_LIMIT_MS, int max_games_one = MAX_GAMES_CPU, int max_games_two = MAX_GAMES_CPU,
             bool is_first_cpu = true, bool is_second_cpu = true, bool is_first_manual = false, bool is_second_manual = false);
 
     ~Game();
 
-    static Game getGameInfo();
+    static Game getGameInfo(std::string fileName);
     void run();
     Move parse_user_input(Board board);
     Move validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board board);

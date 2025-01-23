@@ -60,8 +60,8 @@ public:
     __device__ float simulate_game_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white);
     __device__ float simulate_n_games_gpu(curandState* state, Move *moves, Move *stack, bool is_player_white, int n = MAX_GAMES_GPU, float time_limit_ms = TIME_LIMIT_MS);
     __host__ __device__ Board apply_move(const Move &move);
-    __host__ void print_board();
-    __host__ void print_square(int row, int col);
+    __host__ void print_board(std::ofstream &file);
+    __host__ void print_square(int row, int col, std::ofstream &file);
     __host__ __device__ bool is_equal(Board board);
     std::vector<std::pair<Move, std::string>> get_printable_captures();
 };

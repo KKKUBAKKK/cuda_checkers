@@ -9,7 +9,7 @@
 using namespace std;
 
 // TODO: move output to the file
-Game Game::getGameInfo() {
+Game Game::getGameInfo(std::string fileName) {
     float time_limit_ms = TIME_LIMIT_MS;
     int max_games_one = MAX_GAMES_CPU;
     int max_games_two = MAX_GAMES_CPU;
@@ -18,20 +18,33 @@ Game Game::getGameInfo() {
     bool is_first_manual = false;
     bool is_second_manual = false;
 
+    std::ofstream file;
+    file.open(fileName, std::ofstream::out | std::ofstream::trunc);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << fileName << std::endl;
+        exit(1);
+    }
+
     std::cout << "Enter time limit for each move in milliseconds (default: 1000): ";
+    file << "Enter time limit for each move in milliseconds (default: 1000): ";
     std::cin >> time_limit_ms;
     if (time_limit_ms < 0) {
         std::cerr << "Using default value." << std::endl;
+        file << "Using default value." << std::endl;
         time_limit_ms = TIME_LIMIT_MS;
     }
+    file << time_limit_ms << std::endl;
 
     std::cout << "Is the first player manual? (y/n, default: n): ";
+    file << "Is the first player manual? (y/n, default: n): ";
     char is_first_manual_input;
     std::cin >> is_first_manual_input;
+    file << is_first_manual_input << std::endl;
     if (is_first_manual_input == 'y' || is_first_manual_input == 'Y') {
         is_first_manual = true;
     } else if (is_first_manual_input != 'n' && is_first_manual_input != 'N') {
         std::cerr << "Using default value." << std::endl;
+        file << "Using default value." << std::endl;
         is_first_manual = false;
     } else {
         is_first_manual = false;
@@ -40,32 +53,41 @@ Game Game::getGameInfo() {
 
     if (!is_first_manual) {
         std::cout << "Is the first player a CPU? (y for CPU, n for GPU, default: y): ";
+        file << "Is the first player a CPU? (y for CPU, n for GPU, default: y): ";
         char is_first_cpu_input;
         std::cin >> is_first_cpu_input;
+        file << is_first_cpu_input << std::endl;
         if (is_first_cpu_input == 'y' || is_first_cpu_input == 'Y') {
             is_first_cpu = true;
         } else if (is_first_cpu_input != 'n' && is_first_cpu_input != 'N') {
             std::cerr << "Using default value." << std::endl;
+            file << "Using default value." << std::endl;
             is_first_cpu = true;
         } else {
             is_first_cpu = false;
         }
 
         std::cout << "Enter maximum number of games to simulate for Player 1 (default: CPU=1, GPU=1000): ";
+        file << "Enter maximum number of games to simulate for Player 1 (default: CPU=1, GPU=1000): ";
         std::cin >> max_games_one;
+        file << max_games_one << std::endl;
         if (max_games_one < 0) {
             std::cerr << "Using default value." << std::endl;
+            file << "Using default value." << std::endl;
             max_games_one = is_first_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
         }
     }
 
     std::cout << "Is the second player manual? (y/n, default: n): ";
+    file << "Is the second player manual? (y/n, default: n): ";
     char is_second_manual_input;
     std::cin >> is_second_manual_input;
+    file << is_second_manual_input << std::endl;
     if (is_second_manual_input == 'y' || is_second_manual_input == 'Y') {
         is_second_manual = true;
     } else if (is_second_manual_input != 'n' && is_second_manual_input != 'N') {
         std::cerr << "Using default value." << std::endl;
+        file << "Using default value." << std::endl;
         is_second_manual = false;
     } else {
         is_second_manual = false;
@@ -73,33 +95,47 @@ Game Game::getGameInfo() {
 
     if (!is_second_manual) {
         std::cout << "Is the second player a CPU? (y for CPU, n for GPU, default: y): ";
+        file << "Is the second player a CPU? (y for CPU, n for GPU, default: y): ";
         char is_second_cpu_input;
         std::cin >> is_second_cpu_input;
+        file << is_second_cpu_input << std::endl;
         if (is_second_cpu_input == 'y' || is_second_cpu_input == 'Y') {
             is_second_cpu = true;
         } else if (is_second_cpu_input != 'n' && is_second_cpu_input != 'N') {
             std::cerr << "Using default value." << std::endl;
+            file << "Using default value." << std::endl;
             is_second_cpu = true;
         } else {
             is_second_cpu = false;
         }
 
         std::cout << "Enter maximum number of games to simulate for Player 2 (default: CPU=1, GPU=1000): ";
+        file << "Enter maximum number of games to simulate for Player 2 (default: CPU=1, GPU=1000): ";
         std::cin >> max_games_two;
+        file << max_games_two << std::endl;
         if (max_games_two < 0) {
             std::cerr << "Using default value." << std::endl;
+            file << "Using default value." << std::endl;
             max_games_two = is_second_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
         }
     }
 
-    return Game(time_limit_ms, max_games_one, max_games_two, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
+    file.close();
+
+    return Game(fileName, time_limit_ms, max_games_one, max_games_two, is_first_cpu, is_second_cpu, is_first_manual, is_second_manual);
 }
 
-Game::Game(float time_limit_ms, int max_games_one, int max_games_two, bool is_first_cpu, 
+Game::Game(string fileName, float time_limit_ms, int max_games_one, int max_games_two, bool is_first_cpu, 
            bool is_second_cpu, bool is_first_manual, bool is_second_manual) :
     time_limit_ms(time_limit_ms), max_games_one(max_games_one), max_games_two(max_games_two), is_first_cpu(is_first_cpu), 
     is_second_cpu(is_second_cpu), is_first_manual(is_first_manual), is_second_manual(is_second_manual) {
     
+    file.open(fileName, std::ofstream::out | std::ofstream::app);
+    if (!file.is_open()) {
+        std::cerr << "Error opening file: " << fileName << std::endl;
+        exit(1);
+    }
+
     if (!is_first_manual)
         players[0] = new Player(true, is_first_cpu, max_games_one, time_limit_ms);
 
@@ -110,6 +146,8 @@ Game::Game(float time_limit_ms, int max_games_one, int max_games_two, bool is_fi
 Game::~Game() {
     delete players[0];
     delete players[1];
+
+    file.close();
 }
 
 void Game::run() {
@@ -121,25 +159,30 @@ void Game::run() {
     int black_queen_turns = 0;
 
     std::cout << "Starting game..." << std::endl;
+    file << "Starting game..." << std::endl;
+
 
     while (!game_over) {
-        board.print_board();
+        board.print_board(file);
         temp = board;
 
         std::string color = players[turn]->is_white ? "White" : "Black";
         if ((turn == 0 && is_first_manual) || (turn == 1 && is_second_manual)) {
             // Manual move
             std::cout << "Player " << (turn + 1) << " " << color << " turn:" << std::endl;
+            file << "Player " << (turn + 1) << " " << color << " turn:" << std::endl;
             Move move = parse_user_input(board);
             board = board.apply_move(move);
         } else {
             // NPC move
             std::cout << "Player " << (turn + 1) << " " << color << " turn:\n";
+            file << "Player " << (turn + 1) << " " << color << " turn:\n";
             board = (*(players[turn])).make_move(board); // TODO: check behaviour if no available moves
 
             Move m = get_move(temp, board);
             std::string move_str = get_move_string(m, temp);
             std::cout << "Move: " << move_str << std::endl;
+            file << "Move: " << move_str << std::endl;
             assert (move_str != "Invalid move");
         }
 
@@ -164,6 +207,7 @@ void Game::run() {
         if (white_queen_turns >= 15 && black_queen_turns >= 15) {
             game_over = true;
             std::cout << "Game over! Draw!\n";
+            file << "Game over! Draw!\n";
             break;
         }
 
@@ -171,10 +215,13 @@ void Game::run() {
         if (board.white == temp.white && board.black == temp.black && board.queens == temp.queens) {
             game_over = true;
             std::cout << "Game over! No moves available! ";
+            file << "Game over! No moves available! ";
             if (temp.whiteToMove) {
                 std::cout << "Black wins!" << std::endl;
+                file << "Black wins!" << std::endl;
             } else {
                 std::cout << "White wins!" << std::endl;
+                file << "White wins!" << std::endl;
             }
             break;
         }
@@ -182,11 +229,14 @@ void Game::run() {
         // Check for game end conditions
         if (board.white == 0 || board.black == 0) {
             game_over = true;
-            std::cout << "Game over! No pawns left! ";
+            std::cout << "Game over! No pieces left! ";
+            file << "Game over! No pieces left! ";
             if (board.white == 0) {
                 std::cout << "Black wins!\n";
+                file << "Black wins!\n";
             } else {
                 std::cout << "White wins!\n";
+                file << "White wins!\n";
             }
             break;
         }
@@ -194,7 +244,7 @@ void Game::run() {
         // Switch turn
         turn = 1 - turn;
     }
-    board.print_board();
+    board.print_board(file);
 }
 
 Move Game::get_move(Board prev, Board next) {
@@ -226,7 +276,9 @@ std::string Game::get_move_string(Move move, Board prevBoard) {
 Move Game::parse_user_input(Board board) {
     std::string input;
     std::cout << "Enter your move: ";
+    file << "Enter your move: ";
     std::getline(std::cin, input);
+    file << input << std::endl;
 
     // Regular expressions for different move types
     std::regex move_regex("^[a-h][1-8]-[a-h][1-8]$");
@@ -245,6 +297,7 @@ Move Game::parse_user_input(Board board) {
         uint32_t end = coordinates_to_position(to_col, to_row);
         if (!start || !end) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -255,23 +308,27 @@ Move Game::parse_user_input(Board board) {
         // Check if start position is occupied by current player
         if (!(start & current_player)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
         // Check if end position is empty
         if (end & (current_player | opponent)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
         // Check if move doesn't capture any pieces
         if (!(board.queens & start) && abs(from_row - to_row) != 1 || abs(from_col - to_col) != 1) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
         if (board.queens & start && !are_positions_on_diagonal_empty(from_col, from_row, to_col, to_row, current_player, opponent)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -290,6 +347,7 @@ Move Game::parse_user_input(Board board) {
         uint32_t end = coordinates_to_position(to_col, to_row);
         if (!start || !end) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -299,6 +357,7 @@ Move Game::parse_user_input(Board board) {
         // Check if start position is occupied by current player
         if (!(start & current_player)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -311,6 +370,7 @@ Move Game::parse_user_input(Board board) {
         Move move = validate_single_capture(from_col, from_row, to_col, to_row, temp);
         if (!move.start) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -336,6 +396,7 @@ Move Game::parse_user_input(Board board) {
         uint32_t res_end = coordinates_to_position(to_col, to_row);
         if (!res_start || !res_end) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -345,6 +406,7 @@ Move Game::parse_user_input(Board board) {
         // Check if start position is occupied by current player
         if (!(res_start & current_player)) {
             std::cerr << "Invalid move. Please try again." << std::endl;
+            file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
@@ -365,6 +427,7 @@ Move Game::parse_user_input(Board board) {
             Move move = validate_single_capture(from_col, from_row, to_col, to_row, temp);
             if (!move.start) {
                 std::cerr << "Invalid move. Please try again." << std::endl;
+                file << "Invalid move. Please try again." << std::endl;
                 return parse_user_input(board); // Recursively ask for input again
             }
 
@@ -382,6 +445,7 @@ Move Game::parse_user_input(Board board) {
     }
 
     std::cerr << "Invalid move format. Please try again." << std::endl;
+    file << "Invalid move format. Please try again." << std::endl;
     return parse_user_input(board); // Recursively ask for input again
 }
 

@@ -12,36 +12,43 @@
 #include <random>
 #include <chrono>
 
-__host__ void Board::print_board() {
+__host__ void Board::print_board(std::ofstream &file) {
     // Print column headers
     std::cout << "   A  B  C  D  E  F  G  H\n";
+    file << "   A  B  C  D  E  F  G  H\n";
 
     // Depending on whose move it is, decide the orientation of the board
     if (!whiteToMove) {
         for (int row = 0; row < 8; ++row) {
             std::cout << 1 + row << ' '; // Print row number
+            file << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
-                print_square(row, col);
+                print_square(row, col, file);
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+            file << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
     } else {
         for (int row = 7; row >= 0; --row) {
             std::cout << 1 + row << ' '; // Print row number
+            file << 1 + row << ' '; // Print row number
             for (int col = 0; col < 8; ++col) {
-                print_square(row, col);
+                print_square(row, col, file);
             }
             std::cout << ' ' << 1 + row << '\n'; // Print row number again for easier reading
+            file << ' ' << 1 + row << '\n'; // Print row number again for easier reading
         }
     }
 
     // Print column headers
     std::cout << "   A  B  C  D  E  F  G  H\n";
+    file << "   A  B  C  D  E  F  G  H\n";
 }
 
-__host__ void Board::print_square(int row, int col) {
+__host__ void Board::print_square(int row, int col, std::ofstream &file) {
     if (row % 2 != col % 2) {
         std::cout << ".  "; // Empty square
+        file << ".  "; // Empty square
         return;
     }
 
@@ -53,17 +60,22 @@ __host__ void Board::print_square(int row, int col) {
     if (is_white_piece) {
         if (is_queen) {
             std::cout << "WQ "; // White Queen
+            file << "WQ "; // White Queen
         } else {
             std::cout << "W  "; // White piece
+            file << "W  "; // White piece
         }
     } else if (is_black_piece) {
         if (is_queen) {
             std::cout << "BQ "; // Black Queen
+            file << "BQ "; // Black Queen
         } else {
             std::cout << "B  "; // Black piece
+            file << "B  "; // Black piece
         }
     } else {
         std::cout << ".  "; // Empty square
+        file << ".  "; // Empty square
     }
 }
 

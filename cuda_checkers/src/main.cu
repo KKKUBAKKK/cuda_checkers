@@ -1,14 +1,16 @@
-// #include <iostream>
-// #include <thread>
-// #include <chrono>
-// #include <cuda_runtime.h>
-// #include <curand_kernel.h>
-
+#include <iostream>
+#include <fstream>
+#include <string>
 #include "../include/Game.h"
 
-int main() {
-    // Game game = Game::getGameInfo();
-    Game game = Game();
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <output_file>" << std::endl;
+        return 1;
+    }
+    std::string outputFileName = argv[1];
+    
+    Game game = Game::getGameInfo(outputFileName);
     game.run();
     return 0;
 }
