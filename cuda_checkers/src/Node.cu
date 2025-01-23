@@ -13,7 +13,7 @@ Node::Node(Board board, Node *parent) : board(board), parent(parent), children()
     if (parent == nullptr) {
         white_queen_moves = 0;
         black_queen_moves = 0;
-    } else if (count_set_bits(board.white | board.black) != count_set_bits(parent->board.white | parent->board.black)) {
+    } else if (Game::count_set_bits(board.white | board.black) != Game::count_set_bits(parent->board.white | parent->board.black)) {
         if (board.whiteToMove) {
             white_queen_moves = parent->white_queen_moves;
             black_queen_moves = 0;
@@ -27,7 +27,7 @@ Node::Node(Board board, Node *parent) : board(board), parent(parent), children()
 
         uint32_t new_queens = board.white | board.black;
         uint32_t parent_queens = parent->board.white | parent->board.black;
-        if (count_set_bits(new_queens) == count_set_bits(parent_queens) && new_queens != parent_queens) {
+        if (Game::count_set_bits(new_queens) == Game::count_set_bits(parent_queens) && new_queens != parent_queens) {
             if (board.whiteToMove) {
                 black_queen_moves++;
             } else {

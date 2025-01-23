@@ -5,6 +5,10 @@
 #include <thrust/host_vector.h>
 #include "../include/Move.h"
 #include "../include/Stack.h"
+#include <cassert>
+#include <stack>
+#include <vector>
+#include "../include/Game.h"
 #include <random>
 #include <chrono>
 
@@ -62,6 +66,170 @@ __host__ void Board::print_square(int row, int col) {
     } else {
         std::cout << ".  "; // Empty square
     }
+}
+
+std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
+    uint32_t player = whiteToMove ? white : black;
+    uint32_t opponent = whiteToMove ? black : white;
+    uint32_t all_pieces = white | black;
+
+    std::stack<std::pair<Move, std::string>> stack;
+    std::vector<std::pair<Move, std::string>> moves;
+
+    // First try to find all captures (forced captures)
+    // Find all pieces that can capture
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        uint32_t piece = 1 << i;
+        if (!((player >> i) & 1))
+            continue;
+
+        Move m = { piece, piece, 0 };
+        auto c = Game::position_to_coordinates(piece);
+        std::string s = std::string(1, c.first) + std::to_string(c.second);
+        std::pair<Move, std::string> p = { m, s};
+        stack.push(p);
+    }
+
+    // Find all captures and make them longest possible
+    Move m;
+    int stack_size;
+    uint32_t p, o, a, q;
+    while (!stack.empty()) {
+        std::pair<Move, std::string> move_pair = stack.top();
+        stack.pop();
+        m = move_pair.first;
+        stack_size = stack.size();
+        p = player ^ m.start;       // Players pieces (with current one at the start)
+        o = opponent ^ m.captured;  // Opponents pieces (without the captured ones)
+        a = all_pieces ^ m.start;   // All pieces (with captured ones, but without the current one)
+        q = queens;                 // Queens on the board (with current one at the start if a queen)
+
+        // If the piece is not a queen
+        if (!(m.start & q)) {
+            int left[2], right[2];
+            if (m.end & EVEN_ROWS) {        // Piece is in an even row
+                left[0] = EVEN_UP_LEFT;
+                left[1] = EVEN_DOWN_LEFT;
+                right[0] = EVEN_UP_RIGHT;
+                right[1] = EVEN_DOWN_RIGHT;
+            } else {                        // Piece is in an odd row
+                left[0] = ODD_UP_LEFT;
+                left[1] = ODD_DOWN_LEFT;
+                right[0] = ODD_UP_RIGHT;
+                right[1] = ODD_DOWN_RIGHT;
+            }
+
+            if (!(m.end & (FIRST_COLUMN | SECOND_COLUMN))) {
+                if (((m.end << left[0]) & o) && ((m.end << (UP_LEFT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end << (UP_LEFT_CAPT);
+                    t.captured |= (m.end << left[0]);
+                    auto c = Game::position_to_coordinates(t.end);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::pair<Move, std::string> pt = { t, s };
+                    stack.push(pt);
+                }
+                if (((m.end >> left[1]) & o) && ((m.end >> (DOWN_LEFT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end >> (DOWN_LEFT_CAPT);
+                    t.captured |= (m.end >> left[1]);
+                    auto c = Game::position_to_coordinates(t.end);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::pair<Move, std::string> pt = { t, s };
+                    stack.push(pt);
+                }
+            }
+            if (!(m.end & (S_LAST_COLUMN | LAST_COLUMN))) {
+                if (((m.end << right[0]) & o) && ((m.end << (UP_RIGHT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end << (UP_RIGHT_CAPT);
+                    t.captured |= (m.end << right[0]);
+                    auto c = Game::position_to_coordinates(t.end);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::pair<Move, std::string> pt = { t, s };
+                    stack.push(pt);
+                }
+                if (((m.end >> right[1]) & o) && ((m.end >> (DOWN_RIGHT_CAPT)) & ~a)) {
+                    Move t = m;
+                    t.end = m.end >> (DOWN_RIGHT_CAPT);
+                    t.captured |= (m.end >> right[1]);
+                    auto c = Game::position_to_coordinates(t.end);
+                    std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                    std::pair<Move, std::string> pt = { t, s };
+                    stack.push(pt);
+                }
+            }
+        } else { // Piece is a queen
+            uint32_t position = m.end;
+
+            // Initialize steps and constraints for looping through the directions
+            int steps[8];
+            if (position & EVEN_ROWS) {
+                steps[0] = EVEN_UP_LEFT;    steps[1] = ODD_UP_LEFT;
+                steps[2] = EVEN_UP_RIGHT;   steps[3] = ODD_UP_RIGHT;
+                steps[4] = -EVEN_DOWN_LEFT;  steps[5] = -ODD_DOWN_LEFT;
+                steps[6] = -EVEN_DOWN_RIGHT; steps[7] = -ODD_DOWN_RIGHT;
+            } else {
+                steps[0] = ODD_UP_LEFT;     steps[1] = EVEN_UP_LEFT;
+                steps[2] = ODD_UP_RIGHT;    steps[3] = EVEN_UP_RIGHT;
+                steps[4] = -ODD_DOWN_LEFT;   steps[5] = -EVEN_DOWN_LEFT;
+                steps[6] = -ODD_DOWN_RIGHT;  steps[7] = -EVEN_DOWN_RIGHT;
+            }
+
+            int constraints[4];
+            constraints[0] = FIRST_COLUMN; constraints[1] = SECOND_COLUMN;
+            constraints[2] = LAST_COLUMN;  constraints[3] = S_LAST_COLUMN;
+
+            for (int i = 0; i < 4; i++) {
+                position = m.end;
+                int j = 0;
+                bool is_capture = false;
+                Move tm = m;
+
+                while (!(position & constraints[(i & 1) * 2])) {
+                    if ((position & constraints[(i & 1) * 2 + 1]) && !is_capture)
+                        break;
+
+                    int step = steps[(i * 2) + (j++ & 1)];
+                    if (step < 0) {
+                        position >>= -step;
+                    } else {
+                        position <<= step;
+                    }
+                    if (!position)
+                        break;
+
+                    if (is_capture) {
+                        if (position & a)
+                            break;
+                        Move t = tm;
+                        t.end = position;
+                        auto c = Game::position_to_coordinates(t.end);
+                        std::string s = move_pair.second + ":" + std::string(1, c.first) + std::to_string(c.second);
+                        std::pair<Move, std::string> pt = { t, s };
+                        stack.push(pt);
+                        continue;
+                    }
+
+                    if (position & (p | tm.captured)) {
+                        break;
+                    }
+
+                    if ((position & o)) {
+                        is_capture = true;
+                        tm.captured |= position;
+                    }
+                }
+            }
+        }
+
+        // If the stack size is the same, no additional captures were found
+        if (stack.size() == stack_size && m.captured) {
+            moves.push_back(move_pair);
+        }
+    }
+
+    return moves;
 }
 
 __host__ __device__ bool Board::is_equal(Board board) {

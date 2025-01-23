@@ -30,11 +30,13 @@ Player::Player(bool is_white, bool is_cpu, int max_games, int max_iterations, fl
     root = new Node(nullptr, is_white);
 
     // Initialize random states
-    CUDA_CHECK(cudaMalloc(&states, max_games * sizeof(curandState)));
-    int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
+    if (!is_cpu) {
+        CUDA_CHECK(cudaMalloc(&states, max_games * sizeof(curandState)));
+        int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+        init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
+        CUDA_CHECK(cudaGetLastError());
+        CUDA_CHECK(cudaDeviceSynchronize());
+    }
 }
 
 Player::Player(Board board, bool is_white, bool is_cpu, 
@@ -45,11 +47,13 @@ Player::Player(Board board, bool is_white, bool is_cpu,
     root = new Node(board, nullptr);
 
     // Initialize random states
-    CUDA_CHECK(cudaMalloc(&states, max_games * sizeof(curandState)));
-    int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
-    init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
-    CUDA_CHECK(cudaGetLastError());
-    CUDA_CHECK(cudaDeviceSynchronize());
+    if (!is_cpu) {
+        CUDA_CHECK(cudaMalloc(&states, max_games * sizeof(curandState)));
+        int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
+        init_curand<<<num_blocks, THREADS_PER_BLOCK>>>(states, time(NULL));
+        CUDA_CHECK(cudaGetLastError());
+        CUDA_CHECK(cudaDeviceSynchronize());
+    }
 };
 
 Player::~Player() {
@@ -252,6 +256,11 @@ Node* Player::choose_move() {
 Board Player::make_move(Board start_board) {
     // Move root to the current board
     move_root(start_board);
+
+    // If root doesn't have any children, return the current board
+    if (root->is_end()) {
+        return start_board;
+    }
 
     // Run the MCTS algorithm
     mcts_loop();

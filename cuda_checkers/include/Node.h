@@ -26,7 +26,7 @@ public:
     bool is_expanded() const;
     bool is_end() const;
     float get_UCT_value() const;
-    int Node::white_score() const;
+    int white_score() const;
 };
 
 #endif // NODE_H
