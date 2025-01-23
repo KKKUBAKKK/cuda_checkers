@@ -8,7 +8,7 @@
 
 using namespace std;
 
-// TODO: move output to the file
+// TODO; check gpu version
 Game Game::getGameInfo(std::string fileName) {
     float time_limit_ms = TIME_LIMIT_MS;
     int max_games_one = MAX_GAMES_CPU;
