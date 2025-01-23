@@ -1,4 +1,5 @@
 #include "Node.h"
+#include "Game.h"
 
 Node::Node(Board board, Node *parent) : board(board), parent(parent), children(), score(0), visits(0) {
     Move *moves = new Move[MAX_MOVES];
@@ -9,6 +10,32 @@ Node::Node(Board board, Node *parent) : board(board), parent(parent), children()
         possible_moves.push(moves[i]);
     }
 
+    if (parent == nullptr) {
+        white_queen_moves = 0;
+        black_queen_moves = 0;
+    } else if (count_set_bits(board.white | board.black) != count_set_bits(parent->board.white | parent->board.black)) {
+        if (board.whiteToMove) {
+            white_queen_moves = parent->white_queen_moves;
+            black_queen_moves = 0;
+        } else {
+            white_queen_moves = 0;
+            black_queen_moves = parent->black_queen_moves;
+        }
+    } else {
+        white_queen_moves = parent->white_queen_moves;
+        black_queen_moves = parent->black_queen_moves;
+
+        uint32_t new_queens = board.white | board.black;
+        uint32_t parent_queens = parent->board.white | parent->board.black;
+        if (count_set_bits(new_queens) == count_set_bits(parent_queens) && new_queens != parent_queens) {
+            if (board.whiteToMove) {
+                black_queen_moves++;
+            } else {
+                white_queen_moves++;
+            }
+        }
+    }
+    
     delete[] moves;
     delete[] stack;
 }
@@ -32,7 +59,6 @@ Node::~Node() {
     }
 }
 
-// TODO: handle no moves possible
 Move Node::get_move() {
     assert (!possible_moves.empty());
     Move move = possible_moves.front();
@@ -44,9 +70,29 @@ bool Node::is_expanded() const {
     return possible_moves.empty();
 }
 
-// TODO: add draw condition, add no moves possible condition
 bool Node::is_end() const {
+    // If >= 15 queen moves wihout captures, the game is over
+    if (white_queen_moves >= 15 && black_queen_moves >= 15) return true;
+
+    // If no children (no moves possible), the game is over
+    if (children.empty()) return true;
+
+    // If no white or black pieces, the game is over
     return board.white == 0 || board.black == 0;
+}
+
+int Node::white_score() const {
+    // If >= 15 queen moves wihout captures, the game is over
+    if (white_queen_moves >= 15 && black_queen_moves >= 15) return 0.5;
+
+    // If no children (no moves possible), the game is over
+    if (children.empty()) return (board.whiteToMove) ? 0 : 1;
+
+    // If no white or black pieces, the game is over
+    if (board.white == 0) return 0;
+    if (board.black == 0) return 1;
+
+    return -1;
 }
 
 float Node::get_UCT_value() const {

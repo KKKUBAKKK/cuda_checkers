@@ -121,7 +121,6 @@ Node* Player::select() {
     return current;
 }
 
-// TODO: handle no moves possible
 Node* Player::expand(Node* node) {
     // Expand the node
     // Create a new node and add it to the tree
@@ -211,6 +210,13 @@ int Player::mcts_loop() {
         // 1. Selection
         // Find nodes for expansion
         Node *selected = select();
+        if (selected->is_end()) {
+            float score = selected->white_score();
+            assert (score >= 0);
+            if (!is_white) score = 1 - score;
+            backpropagate(selected, score);
+            continue;
+        }
 
         // 2. Expansion
         // For each node, create a new node and add it to the tree
@@ -228,9 +234,6 @@ int Player::mcts_loop() {
     return i;
 }
 
-// TODO: fix calculating score in simulations
-// TODO: check if it should be always positive
-// TODO: it should probably depend on the color of the player, not the board
 Node* Player::choose_move() {
     // Find the best child
     Node* best_child = nullptr;

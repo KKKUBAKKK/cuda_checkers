@@ -12,6 +12,7 @@ public:
     int top; // Top is first empty position
     int n;
 
+    // TODO: add size to all contructors usages (refactor)
     __host__ __device__ explicit Stack(Move *stack = nullptr, int n = MAX_MOVES) {
         top = 0;
         this->stack = stack;

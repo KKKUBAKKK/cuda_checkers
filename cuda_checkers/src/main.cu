@@ -7,7 +7,7 @@
 #include <curand_kernel.h>
 
 int main() {
-    // TODO: Implement the Game class
+    // TODO: implement
 
     return 0;
 }

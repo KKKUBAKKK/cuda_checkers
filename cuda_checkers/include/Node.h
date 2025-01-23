@@ -14,6 +14,8 @@ public:
     std::vector<Node*> children;
     float score;
     float visits;
+    int white_queen_moves;
+    int black_queen_moves;
     std::queue<Move> possible_moves;
 
     explicit Node(Board board = Board(), Node *parent = nullptr);
@@ -24,6 +26,7 @@ public:
     bool is_expanded() const;
     bool is_end() const;
     float get_UCT_value() const;
+    int Node::white_score() const;
 };
 
 #endif // NODE_H
