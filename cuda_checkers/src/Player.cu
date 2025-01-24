@@ -9,24 +9,18 @@ __global__ void simulate_game_gpu_kernel(Board initial_board, float* results, cu
         Move moves[MAX_MOVES];
         Move stack[MAX_MOVES];
 
-        printf("Simulate kernel started\n");
-
         // Each thread gets its own random state
         curandState localState = states[tid];
-        printf("Got the state\n");
 
 
         // Run simulation
         float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
-        printf("Got result\n");
 
         // Store result
         atomicAdd(results, result);
-        printf("Updated result\n");
 
         // Save updated random state
         states[tid] = localState;
-        printf("Saved state");
     }
 }
 
