@@ -89,6 +89,66 @@ __host__ void Board::print_square(int row, int col, std::ofstream &file) {
     }
 }
 
+__host__ void Board::print_board() {
+    // Print column headers
+    std::cout << "   A  B  C  D  E  F  G  H\n";
+    std::cout << "  +--+--+--+--+--+--+--+--+\n";
+
+    // Depending on whose move it is, decide the orientation of the board
+    if (!whiteToMove) {
+        for (int row = 0; row < 8; ++row) {
+            std::cout << 1 + row << ' '; // Print row number
+            for (int col = 0; col < 8; ++col) {
+                std::cout << "|";
+                print_square(row, col);
+            }
+            std::cout << "| " << 1 + row << '\n'; // Print row number again for easier reading
+            std::cout << "  +--+--+--+--+--+--+--+--+\n";
+        }
+    } else {
+        for (int row = 7; row >= 0; --row) {
+            std::cout << 1 + row << ' '; // Print row number
+            for (int col = 0; col < 8; ++col) {
+                std::cout << "|";
+                print_square(row, col);
+            }
+            std::cout << "| " << 1 + row << '\n'; // Print row number again for easier reading
+            std::cout << "  +--+--+--+--+--+--+--+--+\n";
+        }
+    }
+
+    // Print column headers
+    std::cout << "   A  B  C  D  E  F  G  H\n";
+}
+
+__host__ void Board::print_square(int row, int col) {
+    if (row % 2 != col % 2) {
+        std::cout << "  "; // Empty square
+        return;
+    }
+
+    int index = row * 4 + (col / 2);
+    bool is_white_piece = (white >> index) & 1;
+    bool is_black_piece = (black >> index) & 1;
+    bool is_queen = (queens >> index) & 1;
+
+    if (is_white_piece) {
+        if (is_queen) {
+            std::cout << "WQ"; // White Queen
+        } else {
+            std::cout << "W "; // White piece
+        }
+    } else if (is_black_piece) {
+        if (is_queen) {
+            std::cout << "BQ"; // Black Queen
+        } else {
+            std::cout << "B "; // Black piece
+        }
+    } else {
+        std::cout << "  "; // Empty square
+    }
+}
+
 std::vector<std::pair<Move, std::string>> Board::get_printable_captures() {
     uint32_t player = whiteToMove ? white : black;
     uint32_t opponent = whiteToMove ? black : white;

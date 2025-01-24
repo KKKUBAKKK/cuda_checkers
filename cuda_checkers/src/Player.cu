@@ -114,19 +114,18 @@ Node* Player::select() {
     Node* current = root;
     while (current->is_expanded() && !current->is_end()) {
         Node* best_child = nullptr;
-        float best_value = std::numeric_limits<float>::min();
+        float best_value = -std::numeric_limits<float>::infinity();
 
         for (Node* child : current->children) {
+            if (child == nullptr) continue;
             float uct_value = child->get_UCT_value();
             if (uct_value > best_value) {
                 best_value = uct_value;
                 best_child = child;
             }
         }
-
-        if (best_child == nullptr) {
-            break;
-        }
+         
+        assert(best_child != nullptr);
 
         current = best_child;
     }
@@ -179,12 +178,12 @@ float Player::simulate_gpu(Board board) {
     // Allocate memory for results on the GPU
     float* d_results;
     CUDA_CHECK(cudaMalloc(&d_results, sizeof(float)));
-    CUDA_CHECK(cudaMemset(d_results, 0, sizeof(float)));
+    CUDA_CHECK(cudaMemset(d_results, 0.0f, sizeof(float)));
 
     // Allocate memory for max_games on the GPU
     int *d_max_games;
-    CUDA_CHECK(cudaMalloc(&d_max_games, sizeof(float)));
-    CUDA_CHECK(cudaMemset(d_max_games, max_games, sizeof(float)));
+    CUDA_CHECK(cudaMalloc(&d_max_games, sizeof(int)));
+    CUDA_CHECK(cudaMemset(d_max_games, max_games, sizeof(int)));
 
     // Launch the kernel
     simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, states, is_white, d_max_games);
@@ -231,6 +230,7 @@ int Player::mcts_loop() {
         if (selected->is_end()) {
             float score = selected->white_score();
             assert (score >= 0);
+            assert (score <= 1);
             if (!is_white) score = 1 - score;
             backpropagate(selected, score);
             continue;
@@ -243,6 +243,7 @@ int Player::mcts_loop() {
         // 3. Simulation
         // Run simulations on the new nodes
         float score = simulate(new_node);
+        assert (score >= 0);
 
         // 4. Backpropagation
         // Backpropagate the results up the tree
@@ -283,6 +284,7 @@ Board Player::make_move(Board start_board) {
 
     // Find the best child
     Node* best_child = choose_move();
+    assert(best_child != nullptr);
 
     // Set the root to the best child
     move_root(best_child->board);

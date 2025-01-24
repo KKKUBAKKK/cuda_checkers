@@ -62,6 +62,8 @@ public:
     __host__ __device__ Board apply_move(const Move &move);
     __host__ void print_board(std::ofstream &file);
     __host__ void print_square(int row, int col, std::ofstream &file);
+    __host__ void print_board();
+    __host__ void print_square(int row, int col);
     __host__ __device__ bool is_equal(Board board);
     std::vector<std::pair<Move, std::string>> get_printable_captures();
 };
