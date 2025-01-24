@@ -8,7 +8,6 @@
 
 using namespace std;
 
-// TODO; check gpu version
 Game Game::getGameInfo(std::string fileName) {
     float time_limit_ms = TIME_LIMIT_MS;
     int max_games_one = MAX_GAMES_CPU;
@@ -71,7 +70,7 @@ Game Game::getGameInfo(std::string fileName) {
         file << "Enter maximum number of games to simulate for Player 1 (default: CPU=1, GPU=1000): ";
         std::cin >> max_games_one;
         file << max_games_one << std::endl;
-        if (max_games_one < 0) {
+        if (max_games_one < 0 || max_games_one > 1000000) {
             std::cerr << "Using default value." << std::endl;
             file << "Using default value." << std::endl;
             max_games_one = is_first_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
@@ -113,7 +112,7 @@ Game Game::getGameInfo(std::string fileName) {
         file << "Enter maximum number of games to simulate for Player 2 (default: CPU=1, GPU=1000): ";
         std::cin >> max_games_two;
         file << max_games_two << std::endl;
-        if (max_games_two < 0) {
+        if (max_games_two < 0 || max_games_two > 1000000) {
             std::cerr << "Using default value." << std::endl;
             file << "Using default value." << std::endl;
             max_games_two = is_second_cpu ? MAX_GAMES_CPU : MAX_GAMES_GPU;
@@ -177,7 +176,7 @@ void Game::run() {
             // NPC move
             std::cout << "Player " << (turn + 1) << " " << color << " turn:\n";
             file << "Player " << (turn + 1) << " " << color << " turn:\n";
-            board = (*(players[turn])).make_move(board); // TODO: check behaviour if no available moves
+            board = (*(players[turn])).make_move(board);
 
             Move m = get_move(temp, board);
             std::string move_str = get_move_string(m, temp);
@@ -277,6 +276,7 @@ Move Game::parse_user_input(Board board) {
     std::string input;
     std::cout << "Enter your move: ";
     file << "Enter your move: ";
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear the input buffer
     std::getline(std::cin, input);
     file << input << std::endl;
 

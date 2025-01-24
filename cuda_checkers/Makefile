@@ -2,7 +2,7 @@
 NVCC = nvcc
 
 # Compiler flags
-CFLAGS = -arch=sm_75 -rdc=true
+CFLAGS = -arch=sm_75 -G -g -rdc=true -Iinclude -ccbin g++
 
 # Directories
 SRC_DIR = src
