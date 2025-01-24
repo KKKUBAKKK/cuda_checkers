@@ -166,7 +166,7 @@ void Game::run() {
         board.print_board(file);
         temp = board;
 
-        std::string color = players[turn]->is_white ? "White" : "Black";
+        std::string color = (turn == 0) ? "White" : "Black";
         if ((turn == 0 && is_first_manual) || (turn == 1 && is_second_manual)) {
             // Manual move
             std::cout << "Player " << (turn + 1) << " " << color << " turn:" << std::endl;
@@ -307,14 +307,14 @@ Move Game::parse_user_input(Board board) {
 
         // Check if start position is occupied by current player
         if (!(start & current_player)) {
-            std::cerr << "Invalid move. Please try again." << std::endl;
+            std::cerr << "Invalid start. Please try again." << std::endl;
             file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
 
         // Check if end position is empty
         if (end & (current_player | opponent)) {
-            std::cerr << "Invalid move. Please try again." << std::endl;
+            std::cerr << "Invalid end. Please try again." << std::endl;
             file << "Invalid move. Please try again." << std::endl;
             return parse_user_input(board); // Recursively ask for input again
         }
@@ -449,7 +449,7 @@ Move Game::parse_user_input(Board board) {
     return parse_user_input(board); // Recursively ask for input again
 }
 
-Move Game::validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board board) {
+Move Game::validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board &board) {
     // Get bitmasks for start and end positions
     uint32_t start = coordinates_to_position(from_col, from_row);
     uint32_t end = coordinates_to_position(to_col, to_row);
@@ -458,8 +458,13 @@ Move Game::validate_single_capture(char from_col, char from_row, char to_col, ch
     }
 
     // Check if piece is a queen, if not check if move is valid
-    if (!(board.queens & start) && (abs(from_col - to_col) != 1 || abs(from_row - to_row) != 1)) {
+    if (!(board.queens & start) && (abs(from_col - to_col) != 2 || abs(from_row - to_row) != 2)) {
         return Move{0, 0, 0};
+    }
+
+    if (start & board.queens) {
+        board.queens ^= start;
+        board.queens ^= end;
     }
 
     // Set current player and opponent bitmasks
@@ -473,13 +478,15 @@ Move Game::validate_single_capture(char from_col, char from_row, char to_col, ch
 
     // Find the captured piece
     uint32_t temp = start;
+    char temp_row = from_row;
+    char temp_col = from_col;
+    int col_diff = (to_col - from_col > 0) ? 1 : -1;
+    int row_diff = (to_row - from_row > 0) ? 1 : -1;
     uint32_t captured = 0;
     while(temp ^ end) {
-        if (start < end) {
-            temp <<= 1;
-        } else {
-            temp >>= 1;
-        }
+        temp_row += row_diff;
+        temp_col += col_diff;
+        temp = coordinates_to_position(temp_col, temp_row);
 
         if (temp & (current_player ^ start)) {
             return Move{0, 0, 0};

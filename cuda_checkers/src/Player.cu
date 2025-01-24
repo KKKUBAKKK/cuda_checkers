@@ -2,23 +2,32 @@
 #include <chrono>
 #include <iostream>
 
-__global__ void simulate_game_gpu_kernel(Board initial_board, float* results, curandState* states, bool is_player_white) {
+__global__ void simulate_game_gpu_kernel(Board initial_board, float* results, curandState* states, bool is_player_white, int *max_games) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    Move moves[MAX_MOVES];
-    Move stack[MAX_MOVES];
+    if (tid < *max_games) {
+        Move moves[MAX_MOVES];
+        Move stack[MAX_MOVES];
 
-    // Each thread gets its own random state
-    curandState localState = states[tid];
+        printf("Simulate kernel started\n");
 
-    // Run simulation
-    float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
+        // Each thread gets its own random state
+        curandState localState = states[tid];
+        printf("Got the state\n");
 
-    // Store result
-    atomicAdd(results, result);
 
-    // Save updated random state
-    states[tid] = localState;
+        // Run simulation
+        float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
+        printf("Got result\n");
+
+        // Store result
+        atomicAdd(results, result);
+        printf("Updated result\n");
+
+        // Save updated random state
+        states[tid] = localState;
+        printf("Saved state");
+    }
 }
 
 __global__ void init_curand(curandState* state, unsigned long seed) {
@@ -178,8 +187,13 @@ float Player::simulate_gpu(Board board) {
     CUDA_CHECK(cudaMalloc(&d_results, sizeof(float)));
     CUDA_CHECK(cudaMemset(d_results, 0, sizeof(float)));
 
+    // Allocate memory for max_games on the GPU
+    int *d_max_games;
+    CUDA_CHECK(cudaMalloc(&d_max_games, sizeof(float)));
+    CUDA_CHECK(cudaMemset(d_max_games, max_games, sizeof(float)));
+
     // Launch the kernel
-    simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, states, is_white);
+    simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, states, is_white, d_max_games);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -188,8 +202,8 @@ float Player::simulate_gpu(Board board) {
     CUDA_CHECK(cudaMemcpy(&h_results, d_results, sizeof(float), cudaMemcpyDeviceToHost));
 
     // Free allocated memory
+    CUDA_CHECK(cudaFree(d_max_games));
     CUDA_CHECK(cudaFree(d_results));
-    CUDA_CHECK(cudaFree(states));
 
     return h_results;
 }

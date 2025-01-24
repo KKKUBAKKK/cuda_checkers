@@ -25,7 +25,7 @@ public:
     static Game getGameInfo(std::string fileName);
     void run();
     Move parse_user_input(Board board);
-    Move validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board board);
+    Move validate_single_capture(char from_col, char from_row, char to_col, char to_row, Board &board);
     bool are_on_same_diagonal(char from_col, char from_row, char to_col, char to_row);
     static std::pair<char, char> position_to_coordinates(uint32_t position);
     static uint32_t coordinates_to_position(char col, char row);
