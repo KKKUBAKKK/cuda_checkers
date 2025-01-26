@@ -2,7 +2,7 @@
 #include <chrono>
 #include <iostream>
 
-__global__ void simulate_game_gpu_kernel(Board initial_board, float* results, curandState* states, bool is_player_white, int *max_games) {
+__global__ void simulate_game_gpu_kernel(int *is_white_move, uint32_t *white, uint32_t *black, uint32_t *queens, float* results, curandState* states, bool *is_player_white, int *max_games) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (tid < *max_games) {
@@ -12,9 +12,13 @@ __global__ void simulate_game_gpu_kernel(Board initial_board, float* results, cu
         // Each thread gets its own random state
         curandState localState = states[tid];
 
+        Board initial_board(is_white_move);
+        initial_board.white = *white;
+        initial_board.black = *black;
+        initial_board.queens = *queens;
 
         // Run simulation
-        float result = initial_board.simulate_game_gpu(&localState, moves, stack, is_player_white);
+        float result = initial_board.simulate_game_gpu(&localState, moves, stack, *is_player_white);
 
         // Store result
         atomicAdd(results, result);
@@ -163,7 +167,7 @@ float Player::simulate_cpu(Board board) {
     Move *stack = new Move[MAX_MOVES];
     std::random_device rd;
     std::mt19937 rng(rd());
-    float result = root->board.simulate_n_games_cpu(rng, moves, stack, max_games, time_limit_ms, is_white);
+    float result = root->board.simulate_n_games_cpu(rng, moves, stack, is_white, max_games, time_limit_ms);
     delete[] moves;
     delete[] stack;
     return result;
@@ -175,6 +179,20 @@ float Player::simulate_gpu(Board board) {
     // Return the result
     int num_blocks = (max_games + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 
+    // Allocate memory for the board
+    int *is_white_move;
+    uint32_t *white;
+    uint32_t *black;
+    uint32_t *queens;
+    CUDA_CHECK(cudaMalloc(&is_white_move, sizeof(int)));
+    CUDA_CHECK(cudaMemset(is_white_move, board.whiteToMove, sizeof(int)));
+    CUDA_CHECK(cudaMalloc(&white, sizeof(uint32_t)));
+    CUDA_CHECK(cudaMemset(white, board.white, sizeof(uint32_t)));
+    CUDA_CHECK(cudaMalloc(&black, sizeof(uint32_t)));
+    CUDA_CHECK(cudaMemset(black, board.black, sizeof(uint32_t)));
+    CUDA_CHECK(cudaMalloc(&queens, sizeof(uint32_t)));
+    CUDA_CHECK(cudaMemset(queens, board.queens, sizeof(uint32_t)));
+
     // Allocate memory for results on the GPU
     float* d_results;
     CUDA_CHECK(cudaMalloc(&d_results, sizeof(float)));
@@ -185,8 +203,13 @@ float Player::simulate_gpu(Board board) {
     CUDA_CHECK(cudaMalloc(&d_max_games, sizeof(int)));
     CUDA_CHECK(cudaMemset(d_max_games, max_games, sizeof(int)));
 
+    // Allocate memory for is_white
+    bool *d_is_white;
+    CUDA_CHECK(cudaMalloc(&d_is_white, sizeof(bool)));
+    CUDA_CHECK(cudaMemset(d_is_white, is_white, sizeof(bool)));
+
     // Launch the kernel
-    simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(board, d_results, states, is_white, d_max_games);
+    simulate_game_gpu_kernel<<<num_blocks, THREADS_PER_BLOCK>>>(is_white_move, white, black, queens, d_results, states, d_is_white, d_max_games);
     CUDA_CHECK(cudaGetLastError());
     CUDA_CHECK(cudaDeviceSynchronize());
 
@@ -197,6 +220,12 @@ float Player::simulate_gpu(Board board) {
     // Free allocated memory
     CUDA_CHECK(cudaFree(d_max_games));
     CUDA_CHECK(cudaFree(d_results));
+    CUDA_CHECK(cudaFree(d_is_white));
+    CUDA_CHECK(cudaFree(is_white_move));
+    CUDA_CHECK(cudaFree(white));
+    CUDA_CHECK(cudaFree(black));
+    CUDA_CHECK(cudaFree(queens));
+
 
     return h_results;
 }
@@ -244,6 +273,7 @@ int Player::mcts_loop() {
         // Run simulations on the new nodes
         float score = simulate(new_node);
         assert (score >= 0);
+        assert (score <= max_games);
 
         // 4. Backpropagation
         // Backpropagate the results up the tree
@@ -251,7 +281,7 @@ int Player::mcts_loop() {
 
         i++;
     }
-
+    std::cerr << "Loop it iterations: " << i << std::endl;
     return i;
 }
 

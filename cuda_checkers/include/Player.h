@@ -15,7 +15,7 @@
 
 #include "Node.h"
 
-__global__ void simulate_game_gpu_kernel(Board initial_board, float* results, curandState* states, bool is_player_white, int *max_games);
+__global__ void simulate_game_gpu_kernel(int *is_white_move, uint32_t *white, uint32_t *black, uint32_t *queens, float* results, curandState* states, bool *is_player_white, int *max_games);
 __global__ void init_curand(curandState* state, unsigned long seed);
 
 class Player {

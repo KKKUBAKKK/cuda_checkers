@@ -20,21 +20,21 @@ __host__ void Board::print_board(std::ofstream &file) {
     file << "  +--+--+--+--+--+--+--+--+\n";
 
     // Depending on whose move it is, decide the orientation of the board
-    if (!whiteToMove) {
-        for (int row = 0; row < 8; ++row) {
-            std::cout << 1 + row << ' '; // Print row number
-            file << 1 + row << ' '; // Print row number
-            for (int col = 0; col < 8; ++col) {
-                std::cout << "|";
-                file << "|";
-                print_square(row, col, file);
-            }
-            std::cout << "| " << 1 + row << '\n'; // Print row number again for easier reading
-            file << "| " << 1 + row << '\n'; // Print row number again for easier reading
-            std::cout << "  +--+--+--+--+--+--+--+--+\n";
-            file << "  +--+--+--+--+--+--+--+--+\n";
-        }
-    } else {
+    // if (!whiteToMove) {
+    //     for (int row = 0; row < 8; ++row) {
+    //         std::cout << 1 + row << ' '; // Print row number
+    //         file << 1 + row << ' '; // Print row number
+    //         for (int col = 0; col < 8; ++col) {
+    //             std::cout << "|";
+    //             file << "|";
+    //             print_square(row, col, file);
+    //         }
+    //         std::cout << "| " << 1 + row << '\n'; // Print row number again for easier reading
+    //         file << "| " << 1 + row << '\n'; // Print row number again for easier reading
+    //         std::cout << "  +--+--+--+--+--+--+--+--+\n";
+    //         file << "  +--+--+--+--+--+--+--+--+\n";
+    //     }
+    // } else {
         for (int row = 7; row >= 0; --row) {
             std::cout << 1 + row << ' '; // Print row number
             file << 1 + row << ' '; // Print row number
@@ -48,7 +48,7 @@ __host__ void Board::print_board(std::ofstream &file) {
             std::cout << "  +--+--+--+--+--+--+--+--+\n";
             file << "  +--+--+--+--+--+--+--+--+\n";
         }
-    }
+    // }
 
     // Print column headers
     std::cout << "   A  B  C  D  E  F  G  H\n";
