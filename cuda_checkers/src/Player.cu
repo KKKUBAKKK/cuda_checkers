@@ -236,7 +236,7 @@ void Player::backpropagate(Node *node, float score) {
     Node *current = node;
     while (current != nullptr) {
         current->score += score;
-        current->visits++;
+        current->visits += max_games;
         current = current->parent;
     }
 }
@@ -261,7 +261,7 @@ int Player::mcts_loop() {
             assert (score >= 0);
             assert (score <= 1);
             if (!is_white) score = 1 - score;
-            backpropagate(selected, score);
+            backpropagate(selected, score * max_games);
             continue;
         }
 
@@ -292,7 +292,7 @@ Node* Player::choose_move() {
 
     for (Node* child : root->children) {
         if (child->score > best_score) {
-            best_score = child->score;
+            best_score = child->score / child->visits;
             best_child = child;
         }
     }

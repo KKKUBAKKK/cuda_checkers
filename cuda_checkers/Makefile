@@ -2,7 +2,7 @@
 NVCC = nvcc
 
 # Compiler flags
-CFLAGS = -arch=sm_75 -rdc=true
+CFLAGS = -arch=sm_60 -rdc=true
 
 # Directories
 SRC_DIR = src
